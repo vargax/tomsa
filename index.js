@@ -13,6 +13,7 @@ geo.setCredentials({
     password: 'tomsa',
     database: 'tomsa'
 });
+let rowsCount = 0;
 dropTable();
 
 // FUNCTIONS -----------------------------------------------------------------------------------------------------------
@@ -61,8 +62,9 @@ function lookForCloseBlocks(allBlocks) {
     }
     recursiveSetTimeOut();
 
+
     function recursiveSetTimeOut() {
-        console.log(' '+(1 - (spObjAtRadiusQueries.length/totalBlocks)).toFixed(4)+' complete ('+spObjAtRadiusQueries.length+' of '+totalBlocks+' queries remaining)');
+        console.log(' '+(1 - (spObjAtRadiusQueries.length/totalBlocks)).toFixed(4)+' complete ('+spObjAtRadiusQueries.length+' of '+totalBlocks+' queries remaining) EXPECTED ROWS: '+rowsCount);
         let spObjAtRadiusQuery = spObjAtRadiusQueries.pop();
         if (spObjAtRadiusQuery != undefined) {
             setTimeout(function() {
@@ -88,6 +90,7 @@ function saveNearBlocks(nearBlocks, spObjAtRadiusHash) {
         values.push([spO_gid, spD_gid]);
     }
 
+    rowsCount += values.length;
     let query = SQLhelper.QueryBuilder.insertInto(ODtableName,columns,values);
     let insertHash = geo.query(query, end);
     hashToInsertId.set(insertHash, spO_gid);
