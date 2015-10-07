@@ -3,8 +3,9 @@ import GeotabulaDB from 'geotabuladb'
 import * as SQLhelper from './ODmatrix/SQLhelper.js'
 
 // CONSTANTS -----------------------------------------------------------------------------------------------------------
-const ODtableName = 'tabulatr_OD';
-const radius = 100; // In meters
+const ODtableName = 'tabulatr_OD_pop_OandD';
+const radius = 1000; // In meters
+const timeout = 130; // In milisecs
 
 // SCRIPT --------------------------------------------------------------------------------------------------------------
 let geo = new GeotabulaDB();
@@ -37,7 +38,8 @@ function getAllBlocks() {
     console.log('getAllBlocks()');
     let queryParams = {
         tableName: 'manzanas',
-        properties: ['gid','geom']
+        properties: ['gid','geom'],
+	where: 'pob > 0'
         //limit: 100
     };
     geo.query(queryParams, lookForCloseBlocks);
@@ -56,7 +58,8 @@ function lookForCloseBlocks(allBlocks) {
             tableName: 'manzanas',
             geometry: 'geom',
             spObj: block.geom,
-            radius: radius
+            radius: radius,
+            where: 'pob > 0'
         };
         spObjAtRadiusQueries.push([block, queryParams]);
     }
@@ -72,7 +75,7 @@ function lookForCloseBlocks(allBlocks) {
                 hashToBlockId.set(hash, spObjAtRadiusQuery[0].gid);
 
                 recursiveSetTimeOut();
-            }, 50);
+            }, timeout);
         }
     }
 }
