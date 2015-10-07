@@ -1,4 +1,6 @@
 // IMPORTS -------------------------------------------------------------------------------------------------------------
+import Readline from 'readline'
+
 import GeotabulaDB from 'geotabuladb'
 import * as SQLhelper from './ODmatrix/SQLhelper.js'
 
@@ -8,14 +10,20 @@ const radius = 1000; // In meters
 const timeout = 130; // In milisecs
 
 // SCRIPT --------------------------------------------------------------------------------------------------------------
+let rowsCount = 0;
 let geo = new GeotabulaDB();
 geo.setCredentials({
     user: 'tomsa',
     password: 'tomsa',
     database: 'tomsa'
 });
-let rowsCount = 0;
-dropTable();
+
+let rl = Readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+rl.question("Press ENTER to start or Ctrl+c to cancel... ", dropTable);
 
 // FUNCTIONS -----------------------------------------------------------------------------------------------------------
 function dropTable() {
@@ -39,7 +47,7 @@ function getAllBlocks() {
     let queryParams = {
         tableName: 'manzanas',
         properties: ['gid','geom'],
-	where: 'pob > 0'
+        where: 'pob > 0'
         //limit: 100
     };
     geo.query(queryParams, lookForCloseBlocks);
