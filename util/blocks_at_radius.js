@@ -16,6 +16,7 @@ geo.setCredentials({
     database: 'tomsa'
 });
 
+// Sync-required part ----------------------------------------------------------
 let rl = require('readline-sync');
 let input;
 
@@ -31,9 +32,14 @@ input = rl.question("Timeout ("+timeout+' milisecs): ');
 if (input.length != 0) timeout = Number.parseInt(input);
 console.log('|--> Timeout set to '+timeout+' milisecs');
 
-rl.question("Press ENTER to start or Ctrl+c to cancel... ");
-dropTable();
-rl.question("Process complete! Press any kay to exit...");
+// Async-required part ---------------------------------------------------------
+rl = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+rl.question("Press ENTER to start or Ctrl+c to cancel... ", function() {
+    dropTable();
+});
 
 // FUNCTIONS -----------------------------------------------------------------------------------------------------------
 function dropTable() {
