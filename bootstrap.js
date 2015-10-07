@@ -1,2 +1,2 @@
 require('babel/register');
-require('./index.js');
+require('./util/blocks_at_radius.js');

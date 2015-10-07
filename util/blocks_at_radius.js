@@ -1,13 +1,11 @@
 // IMPORTS -------------------------------------------------------------------------------------------------------------
-import Readline from 'readline'
-
 import GeotabulaDB from 'geotabuladb'
-import * as SQLhelper from './ODmatrix/SQLhelper.js'
+import * as SQLhelper from './SQLhelper.js'
 
 // CONSTANTS -----------------------------------------------------------------------------------------------------------
-const ODtableName = 'tabulatr_OD_pop_OandD';
-const radius = 1000; // In meters
-const timeout = 130; // In milisecs
+let ODtableName = 'tabulatr_OD';
+let radius = 1000; // In meters
+let timeout = 130; // In milisecs
 
 // SCRIPT --------------------------------------------------------------------------------------------------------------
 let rowsCount = 0;
@@ -18,12 +16,23 @@ geo.setCredentials({
     database: 'tomsa'
 });
 
-let rl = Readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+let rl = require('readline-sync');
+let input;
 
-rl.question("Press ENTER to start or Ctrl+c to cancel... ", dropTable);
+input = rl.question("Output table name ('"+ODtableName+"'): ");
+if (input.length != 0) ODtableName = input;
+console.log("|--> Output table name set to '"+ODtableName+"'");
+
+input = rl.question("Radius ("+radius+' meters): ');
+if (input.length != 0) radius = Number.parseInt(input);
+console.log('|--> Radius set to '+radius+' meters');
+
+input = rl.question("Timeout ("+timeout+' milisecs): ');
+if (input.length != 0) timeout = Number.parseInt(input);
+console.log('|--> Timeout set to '+timeout+' milisecs');
+
+rl.question("Press ENTER to start or Ctrl+c to cancel... ");
+dropTable();
 
 // FUNCTIONS -----------------------------------------------------------------------------------------------------------
 function dropTable() {
