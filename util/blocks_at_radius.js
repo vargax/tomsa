@@ -33,6 +33,7 @@ console.log('|--> Timeout set to '+timeout+' milisecs');
 
 rl.question("Press ENTER to start or Ctrl+c to cancel... ");
 dropTable();
+rl.question("Process complete! Press any kay to exit...");
 
 // FUNCTIONS -----------------------------------------------------------------------------------------------------------
 function dropTable() {
