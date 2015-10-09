@@ -180,8 +180,7 @@ function calculateNeighbors() {
     // Calculate Neighbors task support functions ----------------------------------------------------------------------
     let hashToBlockId = new Map();
     let totalBlocks;
-    let doneBlocks = 0;
-    let rowsCount = 0;
+    let queries = [];
     function lookForCloseBlocks(allBlocks) {
         console.log('|->lookForCloseBlocks()');
 
@@ -199,12 +198,26 @@ function calculateNeighbors() {
             };
 
             registerSteps();
-            let hash = geo.spatialObjectsAtRadius(queryParams, registerCloseBlocks);
-            hashToBlockId.set(hash, block[shape_column_sptObjId]);
+            queries.push([block[shape_column_sptObjId], queryParams]);
         }
+        recursiveSetTimeOut();
         processQueue();
+
+        function recursiveSetTimeOut() {
+            let query = queries.shift();
+            if (query != undefined) {
+                setTimeout(function() {
+                    let hash = geo.spatialObjectsAtRadius(query[1], registerCloseBlocks);
+                    hashToBlockId.set(hash, query[0]);
+
+                    recursiveSetTimeOut();
+                }, timeout);
+            }
+        }
     }
 
+    let rowsCount = 0;
+    let doneBlocks = 0;
     function registerCloseBlocks(nearBlocks, spObjAtRadiusHash) {
         let gid = hashToBlockId.get(spObjAtRadiusHash);
         hashToBlockId.delete(spObjAtRadiusHash);
@@ -221,7 +234,7 @@ function calculateNeighbors() {
         registerSteps();
         geo.query(query, function() {
             doneBlocks++;
-            console.log(' '+(1 - (doneBlocks/totalBlocks)).toFixed(4)+' complete ('+doneBlocks+' of '+totalBlocks+' queries done) EXPECTED ROWS: '+rowsCount);
+            console.log(' '+(doneBlocks/totalBlocks).toFixed(4)+' complete ('+doneBlocks+' of '+totalBlocks+' queries done) EXPECTED ROWS: '+rowsCount);
             processQueue();
         });
 
