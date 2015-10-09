@@ -180,6 +180,8 @@ function calculateNeighbors() {
     // Calculate Neighbors task support functions ----------------------------------------------------------------------
     let hashToBlockId = new Map();
     let totalBlocks;
+    let doneBlocks = 0;
+    let rowsCount = 0;
     function lookForCloseBlocks(allBlocks) {
         console.log('|->lookForCloseBlocks()');
 
@@ -213,12 +215,15 @@ function calculateNeighbors() {
             let neighbor_gid = feature.properties[shape_column_sptObjId];
             values.push([gid, neighbor_gid]);
         }
+        rowsCount += values.length;
 
         let query = geoHelper.QueryBuilder.insertInto(neighbors_table,columns,values);
         registerSteps();
         geo.query(query, function() {
-            
-	});
+            doneBlocks++;
+            console.log(' '+(1 - (doneBlocks/totalBlocks)).toFixed(4)+' complete ('+doneBlocks+' of '+totalBlocks+' queries done) EXPECTED ROWS: '+rowsCount);
+            processQueue();
+        });
 
         processQueue();
     }
