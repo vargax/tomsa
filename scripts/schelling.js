@@ -40,7 +40,10 @@ geo.setCredentials({
 let rl = require('readline-sync');
 let input;
 
-console.log("TOMSA :: iter1 :: Basic radius-based Schelling Model");
+console.log('------------------------------------------------------');
+console.log("| TOMSA :: iter1 :: Basic radius-based Schelling Model");
+console.log('------------------------------------------------------');
+
 input = rl.question("Output table name ('"+out_table+"'): ");
 if (input.length != 0) {
     out_table = input;
@@ -72,7 +75,8 @@ function processQueue() {
         try {
             currentTask();
         } catch (e) {
-            console.log('DONE!')
+	    console.dir(e);
+            console.log('DONE!');
         }
     } else {
         remainingSteps--;
@@ -212,7 +216,9 @@ function calculateNeighbors() {
 
         let query = geoHelper.QueryBuilder.insertInto(neighbors_table,columns,values);
         registerSteps();
-        geo.query(query, processQueue);
+        geo.query(query, function() {
+            
+	});
 
         processQueue();
     }
