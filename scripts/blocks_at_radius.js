@@ -1,6 +1,6 @@
 // IMPORTS -------------------------------------------------------------------------------------------------------------
 import GeotabulaDB from 'geotabuladb'
-import * as SQLhelper from './SQLhelper.js'
+import * as geoHelper from 'geotabuladb'
 
 // CONSTANTS -----------------------------------------------------------------------------------------------------------
 let ODtableName = 'tabulatr_OD';
@@ -44,17 +44,17 @@ rl.question("Press ENTER to start or Ctrl+c to cancel... ", function() {
 // FUNCTIONS -----------------------------------------------------------------------------------------------------------
 function dropTable() {
     console.log('dropTable()');
-    geo.query(SQLhelper.QueryBuilder.dropTable(ODtableName), createTable);
+    geo.query(geoHelper.QueryBuilder.dropTable(ODtableName), createTable);
 }
 
 function createTable() {
     console.log('createTable()');
     let columns = [
-        ['id', SQLhelper.PK],
-        ['spO_gid', SQLhelper.INT], ['spD_gid', SQLhelper.INT],
-        ['time', SQLhelper.TIMESTAMP]
+        ['id', geoHelper.PK],
+        ['spO_gid', geoHelper.INT], ['spD_gid', geoHelper.INT],
+        ['time', geoHelper.TIMESTAMP]
     ];
-    let query = SQLhelper.QueryBuilder.createTable(ODtableName, columns);
+    let query = geoHelper.QueryBuilder.createTable(ODtableName, columns);
     geo.query(query, getAllBlocks);
 }
 
@@ -118,7 +118,7 @@ function saveNearBlocks(nearBlocks, spObjAtRadiusHash) {
     }
 
     rowsCount += values.length;
-    let query = SQLhelper.QueryBuilder.insertInto(ODtableName,columns,values);
+    let query = geoHelper.QueryBuilder.insertInto(ODtableName,columns,values);
     let insertHash = geo.query(query, end);
     hashToInsertId.set(insertHash, spO_gid);
 }
