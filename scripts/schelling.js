@@ -86,8 +86,12 @@ function processQueue() {
 /**
  * Registers a new step for the current task.
  */
-function registerStep() {
-    remainingSteps++;
+function registerSteps(numSteps) {
+    if (numSteps == undefined) {
+        remainingSteps++;
+    } else {
+        remainingSteps += numSteps;
+    }
 }
 
 /**
@@ -108,15 +112,15 @@ function pushTask(lastTask) {
 // FUNCTIONS -----------------------------------------------------------------------------------------------------------
 function clean() {
     console.log('clean()');
-    registerStep();
-    geo.query(geoHelper.QueryBuilder.dropTable(out_table), processQueue);
+    registerSteps(2);
 
-    registerStep();
+    geo.query(geoHelper.QueryBuilder.dropTable(out_table), processQueue);
     geo.query(geoHelper.QueryBuilder.dropTable(out_table+_NEIGHBORS_TABLE_SUFFIX), processQueue);
 }
 
 function createTables() {
     console.log('createTables()');
+    registerSteps(2);
 
     // Main table for schelling model...
     let queryParams = {
@@ -139,8 +143,6 @@ function createTables() {
         where: 't is null'
     });
     query += 'ALTER TABLE '+out_table+' ADD CONSTRAINT '+out_table+'_pk PRIMARY KEY(t,'+shape_column_sptObjId+');';
-
-    registerStep();
     geo.query(query, processQueue);
 
     // Table for neighbors calculations...
@@ -150,13 +152,11 @@ function createTables() {
     ];
     query = geoHelper.QueryBuilder.createTable(neighbors_table, columns);
     query += 'ALTER TABLE '+neighbors_table+' ADD CONSTRAINT '+neighbors_table+'_pk PRIMARY KEY('+neighbors_table_columns[0]+','+neighbors_table_columns[1]+');';
-
-    registerStep();
     geo.query(query, processQueue);
 
     addTask(function() {
         console.log('|-> VACUUM');
-        registerStep();
+        registerSteps();
         geo.query('VACUUM', processQueue);
     });
 }
@@ -170,7 +170,7 @@ function calculateNeighbors() {
         //limit: 100
     };
 
-    registerStep();
+    registerSteps();
     geo.query(queryParams, lookForCloseBlocks);
 
     // Calculate Neighbors task support functions ----------------------------------------------------------------------
@@ -192,7 +192,7 @@ function calculateNeighbors() {
                 //where: 'pob > 0'
             };
 
-            registerStep();
+            registerSteps();
             let hash = geo.spatialObjectsAtRadius(queryParams, registerCloseBlocks);
             hashToBlockId.set(hash, block[shape_column_sptObjId]);
         }
@@ -211,7 +211,7 @@ function calculateNeighbors() {
         }
 
         let query = geoHelper.QueryBuilder.insertInto(neighbors_table,columns,values);
-        registerStep();
+        registerSteps();
         geo.query(query, processQueue);
 
         processQueue();
