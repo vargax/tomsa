@@ -179,6 +179,7 @@ function calculateNeighbors() {
 
     // Calculate Neighbors task support functions ----------------------------------------------------------------------
     let hashToBlockId = new Map();
+    let doneBlocks = 0;
     let totalBlocks;
     let queries = [];
     function lookForCloseBlocks(allBlocks) {
@@ -197,10 +198,19 @@ function calculateNeighbors() {
                 //where: 'pob > 0'
             };
 
+
+            let columns = [neighbors_table_columns[0],neighbors_table_columns[1]];
+            let query = geoHelper.insertIntoSelect(neighbors_table,columns,queryParams);
+
             registerSteps();
-            queries.push([block[shape_column_sptObjId], queryParams]);
+            geo.query(query, function() {
+                doneBlocks++;
+                console.log(' '+(doneBlocks/totalBlocks).toFixed(4)+' complete ('+doneBlocks+' of '+totalBlocks+' queries done) EXPECTED ROWS: '+rowsCount);
+                processQueue();
+            });
+            //queries.push([block[shape_column_sptObjId], queryParams]);
         }
-        recursiveSetTimeOut();
+        //recursiveSetTimeOut();
         processQueue();
 
         function recursiveSetTimeOut() {
