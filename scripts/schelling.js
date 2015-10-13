@@ -7,21 +7,26 @@ const _NEIGHBORS_TABLE_SUFFIX = '_neighbor';
 
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
 let radius = 1000;
+let populations = 3;
 
 let shape_table = 'manzanas';
 let shape_column_sptObjId = 'gid';
 let shape_column_sptObjGeom = 'geom';
 
 let out_table = 'schelling';
-let neighbors_table = out_table+_NEIGHBORS_TABLE_SUFFIX;
+let out_table_colums = ['t','currentPop'];
+let time = out_table_colums[0];
+let currentPop = out_table_colums[1];
 
+let neighbors_table = out_table+_NEIGHBORS_TABLE_SUFFIX;
 let neighbors_table_columns = ['gid','neighbor_gid','lineal_distance'];
 
 // QUEUE VARIABLES -----------------------------------------------------------------------------------------------------
 let queue = [
     clean,
     createTables,
-    calculateNeighbors
+    //calculateNeighbors,
+    genInitialPopulation
 ];
 let currentTask = null;
 let remainingSteps = 0;
@@ -38,9 +43,9 @@ geo.setCredentials({
 let rl = require('readline-sync');
 let input;
 
-console.log('------------------------------------------------------');
+console.log('\n|-----------------------------------------------------');
 console.log("| TOMSA :: iter1 :: Basic radius-based Schelling Model");
-console.log('------------------------------------------------------');
+console.log('|-----------------------------------------------------\n');
 
 input = rl.question("Output table name ('"+out_table+"'): ");
 if (input.length != 0) {
@@ -52,6 +57,10 @@ console.log("|--> Output table name set to '"+out_table+"'");
 input = rl.question("Radius ("+radius+' meters): ');
 if (input.length != 0) radius = Number.parseInt(input);
 console.log('|--> Radius set to '+radius+' meters');
+
+input = rl.question("Populations ("+populations+' different populations): ');
+if (input.length != 0) populations = Number.parseInt(input);
+console.log('|--> Populations set to '+populations+' different populations');
 
 // Async-required part ---------------------------------------------------------
 rl = require('readline').createInterface({
@@ -84,12 +93,8 @@ function processQueue() {
 /**
  * Registers a new step for the current task.
  */
-function registerSteps(numSteps) {
-    if (numSteps == undefined) {
-        remainingSteps++;
-    } else {
-        remainingSteps += numSteps;
-    }
+function registerSteps(numSteps = 1) {
+    remainingSteps += numSteps;
 }
 
 /**
@@ -107,7 +112,7 @@ function pushTask(lastTask) {
     queue.push(lastTask);
 }
 
-// FUNCTIONS -----------------------------------------------------------------------------------------------------------
+// MAIN FUNCTIONS ------------------------------------------------------------------------------------------------------
 function clean() {
     console.log('clean()');
     registerSteps(2);
@@ -128,19 +133,19 @@ function createTables() {
     let query = geoHelper.QueryBuilder.copyTable(out_table, queryParams);
 
     let columns = [
-        ['t', geoHelper.INT],
-        ['currentPop', geoHelper.INT]
+        [time, geoHelper.INT],
+        [currentPop, geoHelper.INT]
     ];
     query += geoHelper.QueryBuilder.addColumns(out_table, columns);
     query += geoHelper.QueryBuilder.update({
         tableName: out_table,
         values: [
-            ['t',0],
-            ['currentPop',-1]
+            [time,0],
+            [currentPop,-1]
         ],
-        where: 't is null'
+        where: time+' is null'
     });
-    query += 'ALTER TABLE '+out_table+' ADD CONSTRAINT '+out_table+'_pk PRIMARY KEY(t,'+shape_column_sptObjId+');';
+    query += 'ALTER TABLE '+out_table+' ADD CONSTRAINT '+out_table+'_pk PRIMARY KEY('+time+','+shape_column_sptObjId+');';
     geo.query(query, processQueue);
 
     // Table for neighbors calculations...
@@ -152,11 +157,7 @@ function createTables() {
     query += 'ALTER TABLE '+neighbors_table+' ADD CONSTRAINT '+neighbors_table+'_pk PRIMARY KEY('+neighbors_table_columns[0]+','+neighbors_table_columns[1]+');';
     geo.query(query, processQueue);
 
-    addTask(function() {
-        console.log('|-> VACUUM');
-        registerSteps();
-        geo.query('VACUUM', processQueue);
-    });
+    vacuum();
 }
 
 function calculateNeighbors() {
@@ -175,5 +176,58 @@ function calculateNeighbors() {
     geo.query(query, function() {
         console.log('|->DONE neighbors calculation!');
         processQueue();
+    });
+
+    vacuum();
+}
+
+function genInitialPopulation() {
+    console.log('genInitialPopulation()');
+    countBlocks();
+
+    function countBlocks() {
+        let query = 'SELECT count(*) FROM '+out_table+';';
+        registerSteps();
+        geo.query(query,setPopulation);
+    }
+
+    function setPopulation(numBlocks) {
+        //console.dir(numBlocks);
+
+        numBlocks = Number.parseInt(numBlocks[0]['count']);
+        let limit = Math.round(numBlocks/(populations+1));
+
+        let gid = shape_column_sptObjId;
+
+        let query='';
+        let population = populations;
+        while (population != 0) {
+            query+= 'UPDATE '+out_table+' SET '+currentPop+'='+population;
+            query+= ' FROM ('
+                    +' SELECT '+gid+' FROM '+out_table
+                    +' WHERE '+currentPop+'=-1 AND '+gid+'>=random()*'
+                    +' (SELECT count(*) FROM '+out_table+' WHERE '+currentPop+'=-1)'
+                    +' LIMIT '+limit
+                    +')AS target';
+            query+= ' WHERE '+out_table+'.'+gid+'=target.'+gid+';';
+            population--;
+        }
+        query+='UPDATE '+out_table+' SET '+currentPop+'=0 WHERE '+currentPop+'= -1;';
+
+        registerSteps();
+        geo.query(query, function() {
+            console.log('|->DONE Initial population generation!');
+            processQueue();
+        });
+        processQueue();
+    }
+}
+
+// SUPPORT FUNCTIONS ---------------------------------------------------------------------------------------------------
+function vacuum() {
+    addTask(function() {
+        console.log('|->VACUUM');
+        registerSteps();
+        geo.query('VACUUM', processQueue);
     });
 }
