@@ -166,16 +166,26 @@ function createTables() {
 
 function calculateNeighbors() {
     console.log('calculateNeighbors()');
-    console.log('|->getAllBlocks()');
-    let queryParams = {
-        tableName: shape_table,
-        properties: [shape_column_sptObjId]
-        //where: 'pob > 0'
-        //limit: 100
-    };
+    getAllBlocks();
+    addTask(function() {
+        console.log('|-> VACUUM');
+        registerSteps();
+        geo.query('VACUUM', processQueue);
+    });
 
-    registerSteps();
-    geo.query(queryParams, lookForCloseBlocks);
+    // SUPPORT FUNCTIONS -----------------------------------------------------------------------------------------------
+    function getAllBlocks() {
+        console.log('|->getAllBlocks()');
+        let queryParams = {
+            tableName: shape_table,
+            properties: [shape_column_sptObjId]
+            //where: 'pob > 0'
+            //limit: 100
+        };
+
+        registerSteps();
+        geo.query(queryParams, lookForCloseBlocks);
+    }
 
     let totalBlocks;
     let doneBlocks=0;
@@ -219,5 +229,15 @@ function calculateNeighbors() {
         doneBlocks++;
         console.log('|---> '+(doneBlocks/totalBlocks).toFixed(4)+' complete ('+doneBlocks+' of '+totalBlocks+' queries done)');
         processQueue();
+    }
+}
+
+function schelling() {
+    console.log('schelling()');
+
+
+    function genInitialPop() {
+        console.log('|->genInitialPop()');
+
     }
 }
