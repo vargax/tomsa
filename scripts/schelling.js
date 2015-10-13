@@ -7,6 +7,7 @@ const _NEIGHBORS_TABLE_SUFFIX = '_neighbor';
 
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
 let radius = 1000;
+let timeout = 100;
 
 let shape_table = 'manzanas';
 let shape_column_sptObjId = 'gid';
@@ -38,9 +39,9 @@ geo.setCredentials({
 let rl = require('readline-sync');
 let input;
 
-console.log('------------------------------------------------------');
+console.log('\n|-----------------------------------------------------');
 console.log("| TOMSA :: iter1 :: Basic radius-based Schelling Model");
-console.log('------------------------------------------------------');
+console.log('|----------------------------------------------------- \n');
 
 input = rl.question("Output table name ('"+out_table+"'): ");
 if (input.length != 0) {
@@ -52,6 +53,10 @@ console.log("|--> Output table name set to '"+out_table+"'");
 input = rl.question("Radius ("+radius+' meters): ');
 if (input.length != 0) radius = Number.parseInt(input);
 console.log('|--> Radius set to '+radius+' meters');
+
+input = rl.question("Timeout ("+timeout+' milisecs): ');
+if (input.length != 0) timeout = Number.parseInt(input);
+console.log('|--> Timeout set to '+timeout+' milisecs');
 
 // Async-required part ---------------------------------------------------------
 rl = require('readline').createInterface({
@@ -161,19 +166,58 @@ function createTables() {
 
 function calculateNeighbors() {
     console.log('calculateNeighbors()');
-
-    let query;
-
-    query = 'INSERT INTO '+neighbors_table;
-    query+= ' SELECT '+shape_table+'.'+shape_column_sptObjId+',neighbor.'+shape_column_sptObjId;
-    query+= ' ,ST_Distance(neighbor.'+shape_column_sptObjGeom+','+shape_table+'.'+shape_column_sptObjGeom+')';
-    query+= ' FROM '+shape_table+','+shape_table+' neighbor';
-    query+= ' WHERE ST_DWithin(neighbor.'+shape_column_sptObjGeom+','+shape_table+'.'+shape_column_sptObjGeom+','+radius+')';
-    //query+= ' LIMIT 1000';
+    console.log('|->getAllBlocks()');
+    let queryParams = {
+        tableName: shape_table,
+        properties: [shape_column_sptObjId]
+        //where: 'pob > 0'
+        //limit: 100
+    };
 
     registerSteps();
-    geo.query(query, function() {
-        console.log('|->DONE neighbors calculation!');
+    geo.query(queryParams, lookForCloseBlocks);
+
+    let totalBlocks;
+    let doneBlocks=0;
+    let queries = [];
+    function lookForCloseBlocks(allBlocks) {
+        console.log('|->lookForCloseBlocks()');
+        totalBlocks = allBlocks.length;
+        console.log('|-->Looking for blocks at ' + radius + ' meters of a total of ' + totalBlocks + ' blocks...');
+
+        for (let block of allBlocks) {
+
+            let currentBlockId = block[shape_column_sptObjId];
+            let query;
+
+            query = 'INSERT INTO ' + neighbors_table;
+            query += ' SELECT ' + shape_table + '.' + shape_column_sptObjId + ',neighbor.' + shape_column_sptObjId
+                + ',ST_Distance(neighbor.' + shape_column_sptObjGeom + ',' + shape_table + '.' + shape_column_sptObjGeom + ')';
+            query += ' FROM ' + shape_table + ',' + shape_table + ' neighbor';
+            query += ' WHERE ' + shape_table + '.' + shape_column_sptObjId + '=' + currentBlockId
+                + 'AND ST_DWithin(neighbor.' + shape_column_sptObjGeom + ',' + shape_table + '.' + shape_column_sptObjGeom + ',' + radius + ')';
+            //query+= ' LIMIT 1000';
+
+            queries.push(query);
+        }
+        recursiveSetTimeOut();
         processQueue();
-    });
+    }
+
+    function recursiveSetTimeOut() {
+        let query = queries.shift();
+        if (query != undefined) {
+            registerSteps();
+            setTimeout(function() {
+                geo.query(query, blockDone);
+                recursiveSetTimeOut();
+            }, timeout);
+        }
+    }
+
+    function blockDone() {
+        doneBlocks++;
+        console.log('|---> '+(doneBlocks/totalBlocks).toFixed(4)+' complete ('+doneBlocks+' of '+totalBlocks+' queries done)');
+        processQueue();
+    }
 }
