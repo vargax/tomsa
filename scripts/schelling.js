@@ -167,87 +167,18 @@ function createTables() {
 
 function calculateNeighbors() {
     console.log('calculateNeighbors()');
-    let queryParams = {
-        tableName: shape_table,
-        properties: [shape_column_sptObjId, shape_column_sptObjGeom]
-        //where: 'pob > 0'
-        //limit: 100
-    };
+
+    let query;
+
+    query = 'INSERT INTO '+neighbors_table+'('+neighbors_table_columns[0]+','+neighbors_table_columns[1]+')';
+    query+= ' SELECT '+shape_table+'.'+shape_column_sptObjId+',neighbor.'+shape_column_sptObjId;
+    query+= ' FROM '+shape_table+','+shape_table+' neighbor';
+    query+= ' WHERE ST_DWithin(neighbor.'+shape_column_sptObjGeom+','+shape_table+'.'+shape_column_sptObjGeom+','+radius+')';
+    //query+= ' LIMIT 1000';
 
     registerSteps();
-    geo.query(queryParams, lookForCloseBlocks);
-
-    // Calculate Neighbors task support functions ----------------------------------------------------------------------
-    let hashToBlockId = new Map();
-    let doneBlocks = 0;
-    let totalBlocks;
-    let queries = [];
-    function lookForCloseBlocks(allBlocks) {
-        console.log('|->lookForCloseBlocks()');
-
-        totalBlocks = allBlocks.length;
-        console.log('|-->Looking for blocks at '+radius+' meters of a total of '+totalBlocks+' blocks...');
-
-        for (let block of allBlocks) {
-            let queryParams = {
-                properties: [shape_column_sptObjId],
-                tableName: shape_table,
-                geometry: shape_column_sptObjGeom,
-                spObj: block[shape_column_sptObjGeom],
-                radius: radius
-                //where: 'pob > 0'
-            };
-
-
-            let columns = [neighbors_table_columns[0],neighbors_table_columns[1]];
-            let query = geoHelper.insertIntoSelect(neighbors_table,columns,queryParams);
-
-            registerSteps();
-            geo.query(query, function() {
-                doneBlocks++;
-                console.log(' '+(doneBlocks/totalBlocks).toFixed(4)+' complete ('+doneBlocks+' of '+totalBlocks+' queries done) EXPECTED ROWS: '+rowsCount);
-                processQueue();
-            });
-            //queries.push([block[shape_column_sptObjId], queryParams]);
-        }
-        //recursiveSetTimeOut();
+    geo.query(query, function() {
+        console.log('|->DONE neighbors calculation!');
         processQueue();
-
-        function recursiveSetTimeOut() {
-            let query = queries.shift();
-            if (query != undefined) {
-                setTimeout(function() {
-                    let hash = geo.spatialObjectsAtRadius(query[1], registerCloseBlocks);
-                    hashToBlockId.set(hash, query[0]);
-
-                    recursiveSetTimeOut();
-                }, timeout);
-            }
-        }
-    }
-
-    let rowsCount = 0;
-    let doneBlocks = 0;
-    function registerCloseBlocks(nearBlocks, spObjAtRadiusHash) {
-        let gid = hashToBlockId.get(spObjAtRadiusHash);
-        hashToBlockId.delete(spObjAtRadiusHash);
-
-        let columns = [neighbors_table_columns[0],neighbors_table_columns[1]];
-        let values = [];
-        for (let feature of nearBlocks.features) {
-            let neighbor_gid = feature.properties[shape_column_sptObjId];
-            values.push([gid, neighbor_gid]);
-        }
-        rowsCount += values.length;
-
-        let query = geoHelper.QueryBuilder.insertInto(neighbors_table,columns,values);
-        registerSteps();
-        geo.query(query, function() {
-            doneBlocks++;
-            console.log(' '+(doneBlocks/totalBlocks).toFixed(4)+' complete ('+doneBlocks+' of '+totalBlocks+' queries done) EXPECTED ROWS: '+rowsCount);
-            processQueue();
-        });
-
-        processQueue();
-    }
+    });
 }
