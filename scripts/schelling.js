@@ -25,7 +25,7 @@ let neighbors_table_columns = ['gid','neighbor_gid','lineal_distance'];
 let queue = [
     clean,
     createTables,
-    //calculateNeighbors,
+    calculateNeighbors,
     genInitialPopulation
 ];
 let currentTask = null;
