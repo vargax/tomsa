@@ -7,7 +7,6 @@ const _NEIGHBORS_TABLE_SUFFIX = '_neighbor';
 
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
 let radius = 1000;
-let timeout = 100;
 
 let shape_table = 'manzanas';
 let shape_column_sptObjId = 'gid';
@@ -28,7 +27,6 @@ let currentTask = null;
 let remainingSteps = 0;
 
 // SCRIPT --------------------------------------------------------------------------------------------------------------
-let rowsCount = 0;
 let geo = new GeotabulaDB();
 geo.setCredentials({
     user: 'tomsa',
@@ -55,10 +53,6 @@ input = rl.question("Radius ("+radius+' meters): ');
 if (input.length != 0) radius = Number.parseInt(input);
 console.log('|--> Radius set to '+radius+' meters');
 
-input = rl.question("Timeout ("+timeout+' milisecs): ');
-if (input.length != 0) timeout = Number.parseInt(input);
-console.log('|--> Timeout set to '+timeout+' milisecs');
-
 // Async-required part ---------------------------------------------------------
 rl = require('readline').createInterface({
     input: process.stdin,
@@ -75,7 +69,7 @@ function processQueue() {
         try {
             currentTask();
         } catch (e) {
-	    console.dir(e);
+	        console.dir(e);
             console.log('DONE!');
         }
     } else {
@@ -170,8 +164,9 @@ function calculateNeighbors() {
 
     let query;
 
-    query = 'INSERT INTO '+neighbors_table+'('+neighbors_table_columns[0]+','+neighbors_table_columns[1]+')';
+    query = 'INSERT INTO '+neighbors_table;
     query+= ' SELECT '+shape_table+'.'+shape_column_sptObjId+',neighbor.'+shape_column_sptObjId;
+    query+= ' ,ST_Distance(neighbor.'+shape_column_sptObjGeom+','+shape_table+'.'+shape_column_sptObjGeom+')';
     query+= ' FROM '+shape_table+','+shape_table+' neighbor';
     query+= ' WHERE ST_DWithin(neighbor.'+shape_column_sptObjGeom+','+shape_table+'.'+shape_column_sptObjGeom+','+radius+')';
     //query+= ' LIMIT 1000';
