@@ -284,7 +284,7 @@ function schelling() {
         }
 
 
-        let totalBlocks = blocks.length;
+        let totalBlocks;
         let doneBlocks = 0;
         let nextReport = 0;
 
@@ -292,7 +292,9 @@ function schelling() {
         function registerNeighbors(blockNeighbors, hash) {
             if (hash == undefined) { // --> Recursion base condition
                 console.log('|--> registerNeighbors()');
+                totalBlocks = blocks.length;
                 console.log(nextReport+'%');
+
                 registerSteps();
             } else {
                 let block = hash2block.get(hash);
