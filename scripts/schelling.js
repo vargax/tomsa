@@ -4,7 +4,7 @@ import * as geoHelper from 'geotabuladb'
 
 // CONSTANTS -----------------------------------------------------------------------------------------------------------
 const _NEIGHBORS_TABLE_SUFFIX = '_neighbor';
-const WORKERS = 3;
+const WORKERS = 10;
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
 let radius = 1000;
 let populations = 3;
@@ -285,8 +285,9 @@ function schelling() {
             totalBlocks = blocks.length;
             process.stdout.write('Loading neighbors to RAM: ');
 
-            for (let worker = 0; worker < WORKERS; worker++) {}
+            for (let worker = 0; worker < WORKERS; worker++) {
                 registerNeighbors();
+            }
 
             processQueue();
         }
