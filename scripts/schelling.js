@@ -8,10 +8,12 @@ const _NEIGHBORS_TABLE_SUFFIX = '_neighbor';
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
 let radius = 1000;
 let populations = 3;
+let iterations = 10;
 
 let shape_table = 'manzanas';
-let shape_column_sptObjId = 'gid';
-let shape_column_sptObjGeom = 'geom';
+let shape_table_columns = ['gid','geom'];
+let gid = shape_table_columns[0];
+let geom = shape_table_columns[1];
 
 let out_table = 'schelling';
 let out_table_colums = ['t','currentPop'];
@@ -19,14 +21,13 @@ let time = out_table_colums[0];
 let currentPop = out_table_colums[1];
 
 let neighbors_table = out_table+_NEIGHBORS_TABLE_SUFFIX;
-let neighbors_table_columns = ['gid','neighbor_gid','lineal_distance'];
+let neighbor_gid = gid+_NEIGHBORS_TABLE_SUFFIX;
+let neighbor_distance = 'lineal_distance';
 
 // QUEUE VARIABLES -----------------------------------------------------------------------------------------------------
 let queue = [
-    clean,
-    createTables,
-    calculateNeighbors,
-    genInitialPopulation
+    genInitialPopulation,
+    schelling
 ];
 let currentTask = null;
 let remainingSteps = 0;
@@ -52,22 +53,30 @@ if (input.length != 0) {
     out_table = input;
     neighbors_table = out_table+_NEIGHBORS_TABLE_SUFFIX;
 }
-console.log("|--> Output table name set to '"+out_table+"'");
+console.log("|-> Output table name set to '"+out_table+"'");
 
-input = rl.question("Radius ("+radius+' meters): ');
-if (input.length != 0) radius = Number.parseInt(input);
-console.log('|--> Radius set to '+radius+' meters');
+input = rl.question("Calculate neighbors -> would take some time! (no): yes/no ");
+if (input.length != 0 && input === 'yes') {
+    input = rl.question("|-> Radius ("+radius+' meters): ');
+    if (input.length != 0) radius = Number.parseInt(input);
+    console.log('|--> Radius set to '+radius+' meters');
+    addTask(calculateNeighbors);
+}
 
 input = rl.question("Populations ("+populations+' different populations): ');
 if (input.length != 0) populations = Number.parseInt(input);
-console.log('|--> Populations set to '+populations+' different populations');
+console.log('|-> Populations set to '+populations+' different populations');
+
+input = rl.question("Iterations ("+iterations+' schelling iterations): ');
+if (input.length != 0) iterations = Number.parseInt(input);
+console.log('|-> Iterations set to '+iterations+'');
 
 // Async-required part ---------------------------------------------------------
 rl = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
 });
-rl.question("Press ENTER to start or Ctrl+c to cancel... ", function() {
+rl.question("\nPress ENTER to start or Ctrl+c to cancel...", function() {
     processQueue();
 });
 
@@ -78,8 +87,8 @@ function processQueue() {
         try {
             currentTask();
         } catch (e) {
-	        console.dir(e);
-            console.log('DONE!');
+            console.log('\nDONE!');
+            console.dir(e);
         }
     } else {
         remainingSteps--;
@@ -102,7 +111,15 @@ function registerSteps(numSteps = 1) {
  * @param nextTask :: Reference to the function to be executed.
  */
 function addTask(nextTask) {
-    queue.unshift(nextTask);
+    if (Array.isArray(nextTask)) {
+        let task = nextTask.pop();
+        while (task != undefined) {
+            queue.unshift(task);
+            task = nextTask.pop();
+        }
+    } else {
+        queue.unshift(nextTask);
+    }
 }
 /**
  * Adds a new task to the end of the queue.
@@ -113,91 +130,106 @@ function pushTask(lastTask) {
 }
 
 // MAIN FUNCTIONS ------------------------------------------------------------------------------------------------------
-function clean() {
-    console.log('clean()');
-    registerSteps(2);
-
-    geo.query(geoHelper.QueryBuilder.dropTable(out_table), processQueue);
-    geo.query(geoHelper.QueryBuilder.dropTable(out_table+_NEIGHBORS_TABLE_SUFFIX), processQueue);
-}
-
-function createTables() {
-    console.log('createTables()');
-    registerSteps(2);
-
-    // Main table for schelling model...
-    let queryParams = {
-        tableName: shape_table,
-        properties: [shape_column_sptObjId, shape_column_sptObjGeom]
-    };
-    let query = geoHelper.QueryBuilder.copyTable(out_table, queryParams);
-
-    let columns = [
-        [time, geoHelper.INT],
-        [currentPop, geoHelper.INT]
-    ];
-    query += geoHelper.QueryBuilder.addColumns(out_table, columns);
-    query += geoHelper.QueryBuilder.update({
-        tableName: out_table,
-        values: [
-            [time,0],
-            [currentPop,-1]
-        ],
-        where: time+' is null'
-    });
-    query += 'ALTER TABLE '+out_table+' ADD CONSTRAINT '+out_table+'_pk PRIMARY KEY('+time+','+shape_column_sptObjId+');';
-    geo.query(query, processQueue);
-
-    // Table for neighbors calculations...
-    columns = [
-        [neighbors_table_columns[0], geoHelper.INT], [neighbors_table_columns[1], geoHelper.INT],
-        [neighbors_table_columns[2], geoHelper.FLOAT]
-    ];
-    query = geoHelper.QueryBuilder.createTable(neighbors_table, columns);
-    query += 'ALTER TABLE '+neighbors_table+' ADD CONSTRAINT '+neighbors_table+'_pk PRIMARY KEY('+neighbors_table_columns[0]+','+neighbors_table_columns[1]+');';
-    geo.query(query, processQueue);
-
-    vacuum();
-}
-
 function calculateNeighbors() {
-    console.log('calculateNeighbors()');
-
-    let query;
-
-    query = 'INSERT INTO '+neighbors_table;
-    query+= ' SELECT '+shape_table+'.'+shape_column_sptObjId+',neighbor.'+shape_column_sptObjId;
-    query+= ' ,ST_Distance(neighbor.'+shape_column_sptObjGeom+','+shape_table+'.'+shape_column_sptObjGeom+')';
-    query+= ' FROM '+shape_table+','+shape_table+' neighbor';
-    query+= ' WHERE ST_DWithin(neighbor.'+shape_column_sptObjGeom+','+shape_table+'.'+shape_column_sptObjGeom+','+radius+')';
-    //query+= ' LIMIT 1000';
-
+    console.log('\ncalculateNeighbors()');
     registerSteps();
-    geo.query(query, function() {
-        console.log('|->DONE neighbors calculation!');
-        processQueue();
-    });
+    addTask([clean, createTables, runQuery]);
+    processQueue();
 
-    vacuum();
+    function clean() {
+        console.log('|-> clean()');
+        registerSteps(2);
+
+        geo.query(geoHelper.QueryBuilder.dropTable(out_table), processQueue);
+        geo.query(geoHelper.QueryBuilder.dropTable(neighbors_table), processQueue);
+    }
+
+    function createTables() {
+        console.log('|-> createTables()');
+        registerSteps(2);
+
+        // Main table for schelling model...
+        let queryParams = {
+            tableName: shape_table,
+            properties: [gid, geom]
+        };
+        let query = geoHelper.QueryBuilder.copyTable(out_table, queryParams);
+
+        let columns = [
+            [time, geoHelper.INT],
+            [currentPop, geoHelper.INT]
+        ];
+        query += geoHelper.QueryBuilder.addColumns(out_table, columns);
+        query += geoHelper.QueryBuilder.update({
+            tableName: out_table,
+            values: [
+                [time,0],
+                [currentPop,-1]
+            ],
+            where: time+' is null'
+        });
+        query += 'ALTER TABLE '+out_table+' ADD CONSTRAINT '+out_table+'_pk PRIMARY KEY('+time+','+gid+');';
+        geo.query(query, processQueue);
+
+        // Table for neighbors calculations...
+        columns = [
+            [gid, geoHelper.INT], [neighbor_gid, geoHelper.INT],
+            [neighbor_distance, geoHelper.FLOAT]
+        ];
+        query = geoHelper.QueryBuilder.createTable(neighbors_table, columns);
+        query += 'ALTER TABLE '+neighbors_table+' ADD CONSTRAINT '+neighbors_table+'_pk PRIMARY KEY('+gid+','+neighbor_gid+');';
+        geo.query(query, processQueue);
+
+        vacuum();
+    }
+
+    function runQuery() {
+        console.log('|-> runQuery()');
+
+        let query;
+
+        query = 'INSERT INTO '+neighbors_table;
+        query+= ' SELECT '+shape_table+'.'+gid+',neighbor.'+gid;
+        query+= ' ,ST_Distance(neighbor.'+geom+','+shape_table+'.'+geom+')';
+        query+= ' FROM '+shape_table+','+shape_table+' neighbor';
+        query+= ' WHERE ST_DWithin(neighbor.'+geom+','+shape_table+'.'+geom+','+radius+')';
+        query+= ' LIMIT 10';
+
+        registerSteps();
+        geo.query(query, function() {
+            console.log('|--> DONE neighbors calculation!');
+            processQueue();
+        });
+
+        vacuum();
+    }
 }
 
 function genInitialPopulation() {
-    console.log('genInitialPopulation()');
-    countBlocks();
+    console.log('\ngenInitialPopulation()');
+    clean();
+
+    function clean() {
+        console.log('|-> clean()');
+        let query = 'DELETE FROM '+out_table+' WHERE '+time+'<> 0;';
+        query += 'UPDATE '+out_table+' SET '+currentPop+'=-1;';
+        registerSteps();
+        geo.query(query, countBlocks);
+    }
 
     function countBlocks() {
+        console.log('|-> countBlocks()');
         let query = 'SELECT count(*) FROM '+out_table+';';
         registerSteps();
-        geo.query(query,setPopulation);
+        geo.query(query, setPopulation);
+        processQueue();
     }
 
     function setPopulation(numBlocks) {
-        //console.dir(numBlocks);
+        console.log('|-> setPopulation()');
 
         numBlocks = Number.parseInt(numBlocks[0]['count']);
         let limit = Math.round(numBlocks/(populations+1));
-
-        let gid = shape_column_sptObjId;
 
         let query='';
         let population = populations;
@@ -216,17 +248,91 @@ function genInitialPopulation() {
 
         registerSteps();
         geo.query(query, function() {
-            console.log('|->DONE Initial population generation!');
+            console.log('|--> DONE Initial population generation!');
             processQueue();
         });
+        vacuum();
         processQueue();
     }
+}
+
+let currentIteration = 1;
+function schelling() {
+    console.log('\nschelling()');
+    loadNeighbors();
+
+    let neighbors = new Map();
+    function loadNeighbors() {
+        console.log('|-> loadNeighbors()');
+        queryBlocks();
+
+        function queryBlocks() {
+            console.log('|--> queryBlocks()');
+            let query = 'SELECT '+gid+' FROM '+out_table+';';
+            registerSteps();
+            geo.query(query, processBlocks);
+        }
+
+        let blocks = [];
+        function processBlocks(allBlocks) {
+            console.log('|--> processBlocks()');
+            for (let block of allBlocks) {
+                blocks.push(block[gid]);
+            }
+            registerNeighbors();
+            processQueue();
+        }
+
+        let hash2block = new Map();
+        function registerNeighbors(blockNeighbors, hash) {
+            if (hash == undefined) { // --> Recursion base condition
+                console.log('|--> registerNeighbors()');
+                registerSteps();
+            } else {
+                let block = hash2block.get(hash);
+                hash2block.delete(hash);
+
+                let myNeighbors = [];
+                for (let neighbor of blockNeighbors) {
+                    myNeighbors.push(neighbor[gid]);
+                }
+
+                neighbors.set(block, myNeighbors);
+
+                if(Math.random() < 0.01) console.log(' DEBUG :: '+myNeighbors.length+' neighbors registered for block '+block);
+            }
+
+            let nextBlock = blocks.shift();
+            if (nextBlock != undefined) { // --> Recursion termination condition
+                let query = 'SELECT '+neighbor_gid+' FROM '+neighbors_table+' WHERE '+gid+'='+nextBlock+';';
+                registerSteps();
+                hash2block.set(geo.query(query, registerNeighbors),nextBlock);
+            } else {
+                console.log('|---> DONE neighbors load! :: '+neighbors.size+' bocks registered');
+            }
+
+            processQueue();
+        }
+
+    }
+
+    function getLastIteration() {
+        let query = 'SELECT '+gid+','+currentPop+' FROM '+out_table+' WHERE '+time+'='+(currentIteration-1);
+        registerSteps();
+        geo.query(query, searchCandidates);
+    }
+
+    function searchCandidates(lastIteration) {
+
+        processQueue();
+    }
+
 }
 
 // SUPPORT FUNCTIONS ---------------------------------------------------------------------------------------------------
 function vacuum() {
     addTask(function() {
-        console.log('|->VACUUM');
+        console.log('|-> VACUUM');
         registerSteps();
         geo.query('VACUUM', processQueue);
     });
