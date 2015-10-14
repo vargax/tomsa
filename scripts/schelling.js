@@ -324,13 +324,9 @@ function schelling() {
                 let query = 'SELECT '+neighbor_gid+' FROM '+neighbors_table+' WHERE '+gid+'='+nextBlock+';';
                 registerSteps();
                 hash2block.set(geo.query(query, registerNeighbors),nextBlock);
-            } else {
-                console.log('|---> DONE neighbors load! :: '+neighbors.size+' bocks registered');
             }
-
             processQueue();
         }
-
     }
 
     function getLastIteration() {
