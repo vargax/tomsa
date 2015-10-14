@@ -283,10 +283,16 @@ function schelling() {
             processQueue();
         }
 
+
+        let totalBlocks = blocks.length;
+        let doneBlocks = 0;
+        let nextReport = 0;
+
         let hash2block = new Map();
         function registerNeighbors(blockNeighbors, hash) {
             if (hash == undefined) { // --> Recursion base condition
                 console.log('|--> registerNeighbors()');
+                console.log(nextReport+'%');
                 registerSteps();
             } else {
                 let block = hash2block.get(hash);
@@ -298,8 +304,14 @@ function schelling() {
                 }
 
                 neighbors.set(block, myNeighbors);
+                doneBlocks++;
 
-                if(Math.random() < 0.01) console.log(' DEBUG :: '+myNeighbors.length+' neighbors registered for block '+block);
+                let progress = doneBlocks/totalBlocks;
+
+                if(progress > nextReport) {
+                    process.stdout.write('...'+(progress*100)+'%');
+                    nextReport += 0.05;
+                }
             }
 
             let nextBlock = blocks.shift();
