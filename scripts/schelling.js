@@ -5,6 +5,7 @@ import * as geoHelper from 'geotabuladb'
 // CONSTANTS -----------------------------------------------------------------------------------------------------------
 const _NEIGHBORS_TABLE_SUFFIX = '_neighbor';
 const WORKERS = 10;
+
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
 let radius = 1000;
 let populations = 3;
@@ -23,6 +24,32 @@ let currentPop = out_table_colums[1];
 let neighbors_table = out_table+_NEIGHBORS_TABLE_SUFFIX;
 let neighbor_gid = gid+_NEIGHBORS_TABLE_SUFFIX;
 let neighbor_distance = 'lineal_distance';
+
+// SHARED VARIABLES ----------------------------------------------------------------------------------------------------
+let blocks = null;
+let numBlocks = -1;
+
+function queryBlocks() {
+    blocks = [];
+    getBlocks();
+
+    function getBlocks() {
+        console.log('++> getBlocks()');
+        let query = 'SELECT '+gid+' FROM '+out_table+';';
+        registerSteps();
+        geo.query(query, loadBlocks);
+    }
+
+    function loadBlocks(allBlocks) {
+        console.log('|+> loadBlocks()');
+        for (let block of allBlocks) {
+            blocks.push(block[gid]);
+        }
+        numBlocks = blocks.length;
+        processQueue();
+    }
+}
+
 
 // QUEUE VARIABLES -----------------------------------------------------------------------------------------------------
 let queue = [
@@ -214,53 +241,42 @@ function genInitialPopulation() {
         let query = 'DELETE FROM '+out_table+' WHERE '+time+'<> 0;';
         query += 'UPDATE '+out_table+' SET '+currentPop+'=-1;';
         registerSteps();
-        geo.query(query, countBlocks);
-    }
-
-    function countBlocks() {
-        console.log('|-> countBlocks()');
-        let query = 'SELECT count(*) FROM '+out_table+';';
-        registerSteps();
         geo.query(query, genQueries);
-        processQueue();
     }
 
     let queries = [];
     let totalQueries;
-    function genQueries(numBlocks) {
+    function genQueries() {
         console.log('|-> genQueries()');
 
-        numBlocks = Number.parseInt(numBlocks[0]['count']);
-        let limit = Math.round(numBlocks/(populations+1));
+        if (!blocks) {          // --> If the blocks had not been retrieved yet
+            queryBlocks();      // |-> Retrieve blocks..
+            addTask(genQueries);// |-> and call me again when done...
+            processQueue();
+            return
+        }
 
-        let population = populations;
-        while (population != 0) {
-            let query='';
-            query+= 'UPDATE '+out_table+' SET '+currentPop+'='+population;
-            query+= ' FROM ('
-                    +' SELECT '+gid+' FROM '+out_table
-                    +' WHERE '+currentPop+'=-1 AND '+gid+'>=random()*'
-                    +' (SELECT count(*) FROM '+out_table+' WHERE '+currentPop+'=-1)'
-                    +' LIMIT '+limit
-                    +')AS target';
-            query+= ' WHERE '+out_table+'.'+gid+'=target.'+gid+';';
+        for (let block of blocks) {
+            let query = '';
+            query+= 'UPDATE '+out_table+' SET '+currentPop+'='+getRandomPopulation();
+            query+= ' WHERE '+gid+'='+block;
 
             queries.push(query);
-            population--;
         }
-        let query ='UPDATE '+out_table+' SET '+currentPop+'=0 WHERE '+currentPop+'= -1;';
-        queries.push(query);
+        totalQueries = queries.length;
 
         console.log('|-> setPopulation()');
-        totalQueries = queries.length;
-        process.stdout.write('Remaining queries: ');
-        let maxWorkers = totalQueries < WORKERS ? totalQueries : WORKERS;
+        let maxWorkers = numBlocks < WORKERS ? numBlocks : WORKERS;
         for (let worker = 0; worker < maxWorkers; worker++) {
             registerSteps();
             setPopulation();
         }
         vacuum();
         processQueue();
+
+        function getRandomPopulation() {
+            return Math.floor(Math.random() * (populations + 1));
+        }
     }
 
     function setPopulation() {
@@ -268,7 +284,7 @@ function genInitialPopulation() {
         if (nextQuery != undefined) { // --> Recursion termination condition
             registerSteps();
             geo.query(nextQuery, setPopulation);
-            process.stdout.write(' ...'+queries.length);
+            process.stdout.write('Progress: '+(1-(queries.length/totalQueries)).toFixed(4)+'\r');
         }
         processQueue();
     }
