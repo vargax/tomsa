@@ -293,6 +293,7 @@ function schelling() {
             if (hash == undefined) { // --> Recursion base condition
                 console.log('|--> registerNeighbors()');
                 totalBlocks = blocks.length;
+                process.stdout.write('Loading neighbors to RAM: ');
 
                 registerSteps();
             } else {
@@ -311,7 +312,7 @@ function schelling() {
 
                 if(progress > nextReport) {
                     let report = (progress.toFixed(2))*100;
-                    process.stdout.write('...'+report+'%');
+                    process.stdout.write(' '+report+'%');
                     nextReport += 0.05;
                 }
             }
