@@ -221,19 +221,21 @@ function genInitialPopulation() {
         console.log('|-> countBlocks()');
         let query = 'SELECT count(*) FROM '+out_table+';';
         registerSteps();
-        geo.query(query, setPopulation);
+        geo.query(query, genQueries);
         processQueue();
     }
 
-    function setPopulation(numBlocks) {
-        console.log('|-> setPopulation()');
+    let queries = [];
+    let totalQueries;
+    function genQueries(numBlocks) {
+        console.log('|-> genQueries()');
 
         numBlocks = Number.parseInt(numBlocks[0]['count']);
         let limit = Math.round(numBlocks/(populations+1));
 
-        let query='';
         let population = populations;
         while (population != 0) {
+            let query='';
             query+= 'UPDATE '+out_table+' SET '+currentPop+'='+population;
             query+= ' FROM ('
                     +' SELECT '+gid+' FROM '+out_table
@@ -242,16 +244,32 @@ function genInitialPopulation() {
                     +' LIMIT '+limit
                     +')AS target';
             query+= ' WHERE '+out_table+'.'+gid+'=target.'+gid+';';
+
+            queries.push(query);
             population--;
         }
-        query+='UPDATE '+out_table+' SET '+currentPop+'=0 WHERE '+currentPop+'= -1;';
+        let query ='UPDATE '+out_table+' SET '+currentPop+'=0 WHERE '+currentPop+'= -1;';
+        queries.push(query);
 
-        registerSteps();
-        geo.query(query, function() {
-            console.log('|--> DONE Initial population generation!');
-            processQueue();
-        });
+        console.log('|-> setPopulation()');
+        totalQueries = queries.length;
+        process.stdout.write('Remaining queries: ');
+        let maxWorkers = totalQueries < WORKERS ? totalQueries : WORKERS;
+        for (let worker = 0; worker < maxWorkers; worker++) {
+            registerSteps();
+            setPopulation();
+        }
         vacuum();
+        processQueue();
+    }
+
+    function setPopulation() {
+        let nextQuery = queries.shift();
+        if (nextQuery != undefined) { // --> Recursion termination condition
+            registerSteps();
+            geo.query(nextQuery, setPopulation);
+            process.stdout.write(' ...'+queries.length);
+        }
         processQueue();
     }
 }
@@ -284,8 +302,8 @@ function schelling() {
             console.log('|--> registerNeighbors()');
             totalBlocks = blocks.length;
             process.stdout.write('Loading neighbors to RAM: ');
-
             for (let worker = 0; worker < WORKERS; worker++) {
+                registerSteps();
                 registerNeighbors();
             }
 
@@ -296,9 +314,7 @@ function schelling() {
         let nextReport = 0;
         let hash2block = new Map();
         function registerNeighbors(blockNeighbors, hash) {
-            if (hash == undefined) { // --> Recursion base condition
-                registerSteps();
-            } else {
+            if (hash != undefined) { // --> Recursion base condition
                 let block = hash2block.get(hash);
                 hash2block.delete(hash);
 
