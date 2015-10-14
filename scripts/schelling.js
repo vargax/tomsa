@@ -175,7 +175,7 @@ function calculateNeighbors() {
         query+= ' ,ST_Distance(neighbor.'+geom+','+shape_table+'.'+geom+')';
         query+= ' FROM '+shape_table+','+shape_table+' neighbor';
         query+= ' WHERE ST_DWithin(neighbor.'+geom+','+shape_table+'.'+geom+','+radius+')';
-        query+= ' LIMIT 10';
+        //query+= ' LIMIT 10';
 
         registerSteps();
         geo.query(query, function() {
