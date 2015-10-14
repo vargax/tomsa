@@ -315,8 +315,8 @@ function schelling() {
                 let progress = doneBlocks/totalBlocks;
 
                 if(progress > nextReport) {
-                    let report = (progress.toFixed(2))*100;
-                    process.stdout.write(' '+report+'%');
+                    let report = progress*100;
+                    process.stdout.write(' '+report.toFixed(0)+'%');
                     nextReport += 0.05;
                 }
             }
