@@ -37,7 +37,7 @@ let timeStamp = Date.now();
 function processQueue() {
     if (!currentTask) {
         let currentTime = Date.now();
-        console.log(':: Last task execution time: '+((currentTime - timeStamp)/1000)+' seconds \n');
+        console.log(':<-- Last task execution time: '+((currentTime - timeStamp)/1000)+' seconds');
         timeStamp = currentTime;
 
         currentTask = queue.shift();
@@ -95,14 +95,14 @@ function queryBlocks() {
     getBlocks();
 
     function getBlocks() {
-        console.log('\n|+> getBlocks()');
+        console.log(':+> getBlocks()');
         let query = 'SELECT '+gid+' FROM '+out_table+';';
         registerSteps();
         geo.query(query, loadBlocks);
     }
 
     function loadBlocks(allBlocks) {
-        console.log('|++> loadBlocks()\n');
+        console.log(':++> loadBlocks()');
         for (let block of allBlocks) {
             blocks.push(block[gid]);
         }
@@ -385,5 +385,3 @@ rl = require('readline').createInterface({
 rl.question("\nPress ENTER to start or Ctrl+c to cancel...", function() {
     processQueue();
 });
-
-
