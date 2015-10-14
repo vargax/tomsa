@@ -17,99 +17,29 @@ let gid = shape_table_columns[0];
 let geom = shape_table_columns[1];
 
 let out_table = 'schelling';
-let out_table_colums = ['t','currentPop'];
-let time = out_table_colums[0];
-let currentPop = out_table_colums[1];
+let out_table_columns = ['t','currentPop'];
+let time = out_table_columns[0];
+let currentPop = out_table_columns[1];
 
 let neighbors_table = out_table+_NEIGHBORS_TABLE_SUFFIX;
 let neighbor_gid = gid+_NEIGHBORS_TABLE_SUFFIX;
 let neighbor_distance = 'lineal_distance';
 
-// SHARED VARIABLES ----------------------------------------------------------------------------------------------------
-let blocks = null;
-let numBlocks = -1;
-
-function queryBlocks() {
-    blocks = [];
-    getBlocks();
-
-    function getBlocks() {
-        console.log('\n|+> getBlocks()');
-        let query = 'SELECT '+gid+' FROM '+out_table+';';
-        registerSteps();
-        geo.query(query, loadBlocks);
-    }
-
-    function loadBlocks(allBlocks) {
-        console.log('|++> loadBlocks()\n');
-        for (let block of allBlocks) {
-            blocks.push(block[gid]);
-        }
-        numBlocks = blocks.length;
-        processQueue();
-    }
-}
-
-
-// QUEUE VARIABLES -----------------------------------------------------------------------------------------------------
+// QUEUE ADMINISTRATION ------------------------------------------------------------------------------------------------
+let currentTask = null;
+let remainingSteps = 0;
 let queue = [
     genInitialPopulation,
     schelling
 ];
-let currentTask = null;
-let remainingSteps = 0;
+let timeStamp = Date.now();
 
-// SCRIPT --------------------------------------------------------------------------------------------------------------
-let geo = new GeotabulaDB();
-geo.setCredentials({
-    user: 'tomsa',
-    password: 'tomsa',
-    database: 'tomsa'
-});
-
-// Sync-required part ----------------------------------------------------------
-let rl = require('readline-sync');
-let input;
-
-console.log('\n|-----------------------------------------------------');
-console.log("| TOMSA :: iter1 :: Basic radius-based Schelling Model");
-console.log('|-----------------------------------------------------\n');
-
-input = rl.question("Output table name ('"+out_table+"'): ");
-if (input.length != 0) {
-    out_table = input;
-    neighbors_table = out_table+_NEIGHBORS_TABLE_SUFFIX;
-}
-console.log("|-> Output table name set to '"+out_table+"'");
-
-input = rl.question("Calculate neighbors -> would take some time! (no): yes/no ");
-if (input.length != 0 && input === 'yes') {
-    input = rl.question("|-> Radius ("+radius+' meters): ');
-    if (input.length != 0) radius = Number.parseInt(input);
-    console.log('|--> Radius set to '+radius+' meters');
-    addTask(calculateNeighbors);
-}
-
-input = rl.question("Populations ("+populations+' different populations): ');
-if (input.length != 0) populations = Number.parseInt(input);
-console.log('|-> Populations set to '+populations+' different populations');
-
-input = rl.question("Iterations ("+iterations+' schelling iterations): ');
-if (input.length != 0) iterations = Number.parseInt(input);
-console.log('|-> Iterations set to '+iterations+'');
-
-// Async-required part ---------------------------------------------------------
-rl = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-rl.question("\nPress ENTER to start or Ctrl+c to cancel...", function() {
-    processQueue();
-});
-
-// QUEUE ---------------------------------------------------------------------------------------------------------------
 function processQueue() {
     if (!currentTask) {
+        let currentTime = Date.now();
+        console.log(':: Last task execution time: '+((currentTime - timeStamp)/1000)+' seconds \n');
+        timeStamp = currentTime;
+
         currentTask = queue.shift();
         try {
             currentTask();
@@ -154,6 +84,31 @@ function addTask(nextTask) {
  */
 function pushTask(lastTask) {
     queue.push(lastTask);
+}
+
+// SHARED OBJECTS ------------------------------------------------------------------------------------------------------
+let blocks = null;
+let numBlocks = -1;
+
+function queryBlocks() {
+    blocks = [];
+    getBlocks();
+
+    function getBlocks() {
+        console.log('\n|+> getBlocks()');
+        let query = 'SELECT '+gid+' FROM '+out_table+';';
+        registerSteps();
+        geo.query(query, loadBlocks);
+    }
+
+    function loadBlocks(allBlocks) {
+        console.log('|++> loadBlocks()\n');
+        for (let block of allBlocks) {
+            blocks.push(block[gid]);
+        }
+        numBlocks = blocks.length;
+        processQueue();
+    }
 }
 
 // MAIN FUNCTIONS ------------------------------------------------------------------------------------------------------
@@ -382,3 +337,53 @@ function vacuum() {
         geo.query('VACUUM', processQueue);
     });
 }
+
+// SCRIPT --------------------------------------------------------------------------------------------------------------
+let geo = new GeotabulaDB();
+geo.setCredentials({
+    user: 'tomsa',
+    password: 'tomsa',
+    database: 'tomsa'
+});
+
+// Sync-required part ----------------------------------------------------------
+let rl = require('readline-sync');
+let input;
+
+console.log('\n|-----------------------------------------------------');
+console.log("| TOMSA :: iter1 :: Basic radius-based Schelling Model");
+console.log('|-----------------------------------------------------\n');
+
+input = rl.question("Output table name ('"+out_table+"'): ");
+if (input.length != 0) {
+    out_table = input;
+    neighbors_table = out_table+_NEIGHBORS_TABLE_SUFFIX;
+}
+console.log("|-> Output table name set to '"+out_table+"'");
+
+input = rl.question("Calculate neighbors -> would take some time! (no): yes/no ");
+if (input.length != 0 && input === 'yes') {
+    input = rl.question("|-> Radius ("+radius+' meters): ');
+    if (input.length != 0) radius = Number.parseInt(input);
+    console.log('|--> Radius set to '+radius+' meters');
+    addTask(calculateNeighbors);
+}
+
+input = rl.question("Populations ("+populations+' different populations): ');
+if (input.length != 0) populations = Number.parseInt(input);
+console.log('|-> Populations set to '+populations+' different populations');
+
+input = rl.question("Iterations ("+iterations+' schelling iterations): ');
+if (input.length != 0) iterations = Number.parseInt(input);
+console.log('|-> Iterations set to '+iterations+'');
+
+// Async-required part ---------------------------------------------------------
+rl = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+rl.question("\nPress ENTER to start or Ctrl+c to cancel...", function() {
+    processQueue();
+});
+
+
