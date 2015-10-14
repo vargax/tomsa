@@ -293,7 +293,6 @@ function schelling() {
             if (hash == undefined) { // --> Recursion base condition
                 console.log('|--> registerNeighbors()');
                 totalBlocks = blocks.length;
-                console.log(nextReport+'%');
 
                 registerSteps();
             } else {
@@ -311,7 +310,8 @@ function schelling() {
                 let progress = doneBlocks/totalBlocks;
 
                 if(progress > nextReport) {
-                    process.stdout.write('...'+(progress*100)+'%');
+                    let report = (progress.toFixed(2))*100;
+                    process.stdout.write('...'+report+'%');
                     nextReport += 0.05;
                 }
             }
