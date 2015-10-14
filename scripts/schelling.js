@@ -34,14 +34,14 @@ function queryBlocks() {
     getBlocks();
 
     function getBlocks() {
-        console.log('++> getBlocks()');
+        console.log('\n|+> getBlocks()');
         let query = 'SELECT '+gid+' FROM '+out_table+';';
         registerSteps();
         geo.query(query, loadBlocks);
     }
 
     function loadBlocks(allBlocks) {
-        console.log('|+> loadBlocks()');
+        console.log('|++> loadBlocks()\n');
         for (let block of allBlocks) {
             blocks.push(block[gid]);
         }
