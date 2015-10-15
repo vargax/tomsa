@@ -61,6 +61,7 @@ function processQueue() {
         }
     }
 
+    console.dir(currentTask);
     console.log(remainingSteps);
     console.dir(queue);
 }
