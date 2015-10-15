@@ -45,6 +45,7 @@ function processQueue() {
         let currentTime = Date.now();
         console.log(':<-- Last task execution time: '+((currentTime - timeStamp)/1000)+' seconds');
         timeStamp = currentTime;
+        console.dir(queue);
 
         currentTask = queue.shift();
         try {
@@ -292,7 +293,7 @@ function schelling() {
         console.log('|--> queryInitialState()');
         if (!neighbors) {               // --> If the neighbors had not been retrieved yet
             queryNeighbors();           // |-> Retrieve neighbors...
-            addTask(queryInitialState);  // |-> and call me again when done...
+            addTask(queryInitialState); // |-> and call me again when done...
             return
         }
 
