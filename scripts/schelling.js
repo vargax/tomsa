@@ -236,9 +236,11 @@ function genInitialPopulation() {
         console.log('|-> clean()');
         let query = 'DELETE FROM '+out_table+' WHERE '+time+'<> 0;';
         query += 'UPDATE '+out_table+' SET '+currentPop+'=-1;';
+
+        addTask(genQueries);
+
         registerSteps();
         geo.query(query, processQueue);
-        addTask(genQueries);
     }
 
     function genQueries() {
