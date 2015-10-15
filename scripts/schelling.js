@@ -60,12 +60,6 @@ function processQueue() {
             processQueue();
         }
     }
-
-    console.log('!! CURRENT_TASK:');
-    console.dir(currentTask);
-    console.log('!! rmSTEPS: '+remainingSteps);
-    console.log('!! QUEUE:');
-    console.dir(queue);
 }
 
 /**
@@ -130,7 +124,6 @@ function queryNeighbors() {
     if (!blocks) {              // --> If the blocks had not been retrieved yet
         queryBlocks();          // |-> Retrieve blocks..
         addTask(queryNeighbors);// |-> and call me again when done...
-        processQueue();
         return
     }
 
@@ -166,15 +159,16 @@ function queryNeighbors() {
         }
 
         let nextQuery = queries.shift();
-        if (nextQuery != undefined) {           // --> Recursion termination condition
-            let block = nextQuery[0];
-            let query = nextQuery[1];
-
-            registerSteps();
-            hash2block.set(geo.query(query, loadNeighbors), block);
-            process.stdout.write('Progress: '+(1-(queries.length/totalQueries)).toFixed(3)+'\r');
+        if (nextQuery == undefined) {           // --> Recursion termination condition
+            processQueue();
+            return
         }
-        processQueue();
+
+        let block = nextQuery[0];
+        let query = nextQuery[1];
+
+        hash2block.set(geo.query(query, loadNeighbors), block);
+        process.stdout.write('Progress: '+(1-(queries.length/totalQueries)).toFixed(3)+'\r');
     }
 }
 
@@ -342,9 +336,8 @@ function schelling() {
         schellingSim = new Map();
         schellingSim.set(0,currentState);
 
-        registerSteps();
+        processQueue();
         simulate();
-
     }
 
     function simulate() {
