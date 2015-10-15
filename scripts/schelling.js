@@ -4,7 +4,8 @@ import * as geoHelper from 'geotabuladb'
 
 // CONSTANTS -----------------------------------------------------------------------------------------------------------
 const _NEIGHBORS_TABLE_SUFFIX = '_neighbor';
-const WORKERS = 10;
+const NODE_WORKERS = 3;
+const DATABASE_WORKERS = 10;
 
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
 let radius = 1000;
@@ -140,15 +141,29 @@ function queryNeighbors() {
     function loadNeighbors(allNeighbors) {
         console.log(':++> loadNeighbors()');
         neighbors = new Map();
-        for (let tuple of allNeighbors) {
-            let myGid = tuple[gid];
-            let neighborGid = tuple[neighbor_gid];
+
+        for (let i = 0; i < NODE_WORKERS; i++) {
+            registerSteps();
+            worker(allNeighbors);
+        }
+
+        processQueue();
+    }
+
+    function worker(allNeighbors) {
+        let currentTuple = allNeighbors.shift();
+
+        while (currentTuple != undefined) {
+            let myGid = currentTuple[gid];
+            let neighborGid = currentTuple[neighbor_gid];
+
             try {
                 neighbors.get(myGid).push(neighborGid);
             } catch (e) {
                 neighbors.set(myGid,[neighborGid]);
             }
         }
+
         processQueue();
     }
 }
@@ -337,8 +352,7 @@ function schelling() {
 
         let thisIterBlocks = blocks.slice();
         console.log('|--> processBlock()');
-        let maxWorkers = numBlocks < WORKERS ? numBlocks : WORKERS;
-        for (let worker = 0; worker < maxWorkers; worker++) {
+        for (let worker = 0; worker < NODE_WORKERS; worker++) {
             registerSteps();
             processBlock();
         }
@@ -406,6 +420,8 @@ function schelling() {
 
     function saveResults() {
         console.log('|-> saveResults()');
+        console.dir(queue);
+
         processQueue();
     }
 }
