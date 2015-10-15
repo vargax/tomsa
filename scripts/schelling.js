@@ -349,7 +349,6 @@ function schelling() {
         currentIteration <= iterations ? addTask(simulate) : addTask(saveResults);
 
         addTask(movingPop2emptyBlocks);
-        processQueue();
 
         function processBlock() {
             let currentBlock = thisIterBlocks.shift();
