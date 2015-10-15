@@ -30,7 +30,7 @@ let neighbor_distance = 'lineal_distance';
 let currentTask = null;
 let remainingSteps = 0;
 let queue = [
-    //genInitialPopulation,
+    genInitialPopulation,
     schelling
 ];
 let timeStamp = Date.now();
@@ -45,7 +45,7 @@ function processQueue() {
         let currentTime = Date.now();
         console.log(':<-- Last task execution time: '+((currentTime - timeStamp)/1000)+' seconds');
         timeStamp = currentTime;
-        console.dir(queue);
+        //console.dir(queue);
 
         currentTask = queue.shift();
         try {
@@ -123,8 +123,8 @@ let numNeighbors = 0;
 function queryNeighbors() {
     console.log(':+> queryNeighbors()');
     if (!blocks) {              // --> If the blocks had not been retrieved yet
-        queryBlocks();          // |-> Retrieve blocks..
-        addTask(queryNeighbors);// |-> and call me again when done...
+        addTask(queryNeighbors);// |-> Call me again when you
+        queryBlocks();          // |-> retrieve blocks..
         return
     }
     getNeighbors();
@@ -240,47 +240,42 @@ function genInitialPopulation() {
         geo.query(query, genQueries);
     }
 
-    let queries = [];
-    let totalQueries;
     function genQueries() {
         console.log('|-> genQueries()');
 
-        if (!blocks) {          // --> If the blocks had not been retrieved yet
-            queryBlocks();      // |-> Retrieve blocks..
-            addTask(genQueries);// |-> and call me again when done...
+        if (!blocks) {              // --> If the blocks had not been retrieved yet
+            addTask(genQueries);    // |-> Call me again when you
+            queryBlocks();          // |-> retrieve blocks..
             return
         }
 
-        for (let block of blocks) {
-            let query = '';
-            query+= 'UPDATE '+out_table+' SET '+currentPop+'='+getRandomPopulation();
-            query+= ' WHERE '+gid+'='+block;
+        let query='';
+        let population = populations;
+        let limit = Math.round(numBlocks/(populations+1));
+        let remaining = numBlocks;
+        while (population != 0) {
+            query+= 'UPDATE '+out_table+' SET '+currentPop+'='+population;
+            query+= ' FROM ('
+                +' SELECT '+gid+' FROM '+out_table
+                +' WHERE '+currentPop+'=-1 AND '+gid+'>=random()*'+remaining
+                +' LIMIT '+limit
+                +')AS target';
+            query+= ' WHERE '+out_table+'.'+gid+'=target.'+gid+';';
 
-            queries.push(query);
+            remaining -= limit;
+            population--;
         }
-        totalQueries = queries.length;
+        query+='UPDATE '+out_table+' SET '+currentPop+'=0 WHERE '+currentPop+'= -1;';
 
-        console.log('|-> setPopulation()');
-        let maxWorkers = numBlocks < WORKERS ? numBlocks : WORKERS;
-        for (let worker = 0; worker < maxWorkers; worker++) {
-            registerSteps();
-            setPopulation();
-        }
-        vacuum();
+        registerSteps();
+        geo.query(query, done);
+
         processQueue();
-
-        function getRandomPopulation() {
-            return Math.floor(Math.random() * (populations + 1));
-        }
     }
 
-    function setPopulation() {
-        let nextQuery = queries.shift();
-        if (nextQuery != undefined) { // --> Recursion termination condition
-            registerSteps();
-            geo.query(nextQuery, setPopulation);
-            process.stdout.write('Progress: '+(1-(queries.length/totalQueries)).toFixed(3)+'\r');
-        }
+    function done() {
+        console.log('|--> DONE Initial population generation!');
+        vacuum();
         processQueue();
     }
 }
