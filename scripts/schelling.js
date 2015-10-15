@@ -292,8 +292,8 @@ function schelling() {
     function queryInitialState() {
         console.log('|--> queryInitialState()');
         if (!neighbors) {               // --> If the neighbors had not been retrieved yet
-            queryNeighbors();           // |-> Retrieve neighbors...
-            addTask(queryInitialState); // |-> and call me again when done...
+            addTask(queryInitialState); // |-> call me again when done the
+            queryNeighbors();           // |-> neighbors retrieval
             return
         }
 
