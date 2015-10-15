@@ -4,7 +4,6 @@ import * as geoHelper from 'geotabuladb'
 
 // CONSTANTS -----------------------------------------------------------------------------------------------------------
 const _NEIGHBORS_TABLE_SUFFIX = '_neighbor';
-const NODE_WORKERS = 3;
 const DATABASE_WORKERS = 10;
 
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
@@ -142,15 +141,6 @@ function queryNeighbors() {
         console.log(':++> loadNeighbors()');
         neighbors = new Map();
 
-        for (let i = 0; i < NODE_WORKERS; i++) {
-            registerSteps();
-            worker(allNeighbors);
-        }
-
-        processQueue();
-    }
-
-    function worker(allNeighbors) {
         let currentTuple = allNeighbors.shift();
 
         while (currentTuple != undefined) {
@@ -352,10 +342,9 @@ function schelling() {
 
         let thisIterBlocks = blocks.slice();
         console.log('|--> processBlock()');
-        for (let worker = 0; worker < NODE_WORKERS; worker++) {
-            registerSteps();
-            processBlock();
-        }
+
+        registerSteps();
+        processBlock();
 
         currentIteration++;
         schellingSim.set(currentIteration, newState);
