@@ -140,21 +140,15 @@ function queryNeighbors() {
     function loadNeighbors(allNeighbors) {
         console.log(':++> loadNeighbors()');
         neighbors = new Map();
-
-        let currentTuple = allNeighbors.shift();
-        while (currentTuple != undefined) {
-            let myGid = currentTuple[gid];
-            let neighborGid = currentTuple[neighbor_gid];
-
+        for (let tuple of allNeighbors) {
+            let myGid = tuple[gid];
+            let neighborGid = tuple[neighbor_gid];
             try {
                 neighbors.get(myGid).push(neighborGid);
             } catch (e) {
                 neighbors.set(myGid,[neighborGid]);
             }
-
-            currentTuple = allNeighbors.shift();
         }
-
         processQueue();
     }
 }
@@ -240,7 +234,7 @@ function calculateNeighbors() {
 function genInitialPopulation() {
     console.log('\ngenInitialPopulation()');
     registerSteps();
-    addTask([clean, setPop, done]);
+    addTask([clean, setPopulations, done]);
     processQueue();
 
     function clean() {
@@ -252,12 +246,12 @@ function genInitialPopulation() {
         geo.query(query, processQueue);
     }
 
-    function setPop() {
-        console.log('|-> setPop()');
+    function setPopulations() {
+        console.log('|-> setPopulations()');
 
-        if (!blocks) {              // --> If the blocks had not been retrieved yet
-            addTask(setPop);    // |-> Call me again when you
-            queryBlocks();          // |-> retrieve blocks..
+        if (!blocks) {                  // --> If the blocks had not been retrieved yet
+            addTask(setPopulations);    // |-> Call me again when you
+            queryBlocks();              // |-> retrieve blocks..
             return
         }
 
