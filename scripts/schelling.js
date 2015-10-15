@@ -9,6 +9,7 @@ const WORKERS = 10;
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
 let radius = 1000;
 let populations = 3;
+let tolerance = 0.3;
 let iterations = 10;
 
 let shape_table = 'manzanas';
@@ -160,7 +161,7 @@ function queryNeighbors() {
 
             registerSteps();
             hash2block.set(geo.query(query, loadNeighbors), block);
-            process.stdout.write('Progress: '+(1-(queries.length/totalQueries)).toFixed(4)+'\r');
+            process.stdout.write('Progress: '+(1-(queries.length/totalQueries)).toFixed(3)+'\r');
         }
         processQueue();
     }
@@ -294,32 +295,131 @@ function genInitialPopulation() {
         if (nextQuery != undefined) { // --> Recursion termination condition
             registerSteps();
             geo.query(nextQuery, setPopulation);
-            process.stdout.write('Progress: '+(1-(queries.length/totalQueries)).toFixed(4)+'\r');
+            process.stdout.write('Progress: '+(1-(queries.length/totalQueries)).toFixed(3)+'\r');
         }
         processQueue();
     }
 }
 
-let currentIteration = 1;
 function schelling() {
     console.log('\nschelling()');
+    loadInitialState();
 
-    if (!neighbors) {          // --> If the blocks had not been retrieved yet
-        queryNeighbors();      // |-> Retrieve blocks..
-        addTask(schelling);// |-> and call me again when done...
+    let schellingSim = null;
+    let currentIteration = 0;
+    function loadInitialState(initialState) {
+        console.log('|-> loadInitialState()');
+        if (!neighbors) {               // --> If the neighbors had not been retrieved yet
+            queryNeighbors();           // |-> Retrieve neighbors...
+            addTask(loadInitialState);  // |-> and call me again when done...
+            processQueue();
+            return
+        }
+
+        if (initialState == undefined) { // --> Recursion base condition
+            console.log('|--> queryInitialState');
+            let query = 'SELECT '+gid+','+currentPop+' FROM '+out_table+' WHERE '+time+'=0';
+            registerSteps();
+            geo.query(query, loadInitialState);
+        } else {
+            console.log('|--> savingInitialState');
+            let currentState = new Map();
+            for (let block of initialState) {
+                let blockId = block[gid];
+                let currentPop = Number.parseInt(block[currentPop]);
+                currentState.set(blockId, currentPop);
+            }
+            schellingSim = new Map();
+            schellingSim.set(0,currentState);
+
+            registerSteps();
+            simulate();
+        }
         processQueue();
-        return
     }
 
-    console.log(numNeighbors);
+    function simulate() {
+        console.log('|-> simulate() :: '+currentIteration);
+        let currentState = schellingSim.get(currentIteration);
+        let newState = new Map();
 
-    function getLastIteration() {
-        let query = 'SELECT '+gid+','+currentPop+' FROM '+out_table+' WHERE '+time+'='+(currentIteration-1);
-        registerSteps();
-        geo.query(query, searchCandidates);
+        let emptyBlocks = [];
+        let movingPopulations = [];
+
+        let blocks = blocks.slice();
+        console.log('|--> processBlock()');
+        let maxWorkers = numBlocks < WORKERS ? numBlocks : WORKERS;
+        for (let worker = 0; worker < maxWorkers; worker++) {
+            registerSteps();
+            processBlock();
+        }
+
+        currentIteration++;
+        schellingSim.set(currentIteration, newState);
+
+        currentIteration <= iterations ? addTask(simulate) : addTask(saveResults);
+
+        addTask(movingPop2emptyBlocks);
+        processQueue();
+
+        function processBlock() {
+            let currentBlock = blocks.shift();
+            if (currentBlock == undefined) {        // --> Recursion termination condition
+                processQueue();
+                return
+            }
+
+            let myPopulation = currentState.get(currentBlock);
+            if (myPopulation == 0) {                // --> If this is an empty block...
+                emptyBlocks.push(currentBlock);     // |-> Add block to available blocks...
+            } else {                                // |-> Else
+                let myNeighbors = neighbors.get(currentBlock);
+                if (amIMoving(myPopulation, myNeighbors)) {
+                    movingPopulations.push(myPopulation);
+                    emptyBlocks.push(currentBlock);
+                } else {
+                    newState.set(currentBlock, currentPop);
+                }
+            }
+            process.stdout.write('Progress: '+(1-(blocks.length/numBlocks)).toFixed(3)+'\r');
+            processBlock();
+        }
+
+        function movingPop2emptyBlocks() {
+            registerSteps();
+            console.log('|--> movingPop2emptyBlocks()');
+
+            let population = movingPopulations.shift();
+            while (population != undefined) {
+
+                let randomBlock = Math.floor(Math.random() * emptyBlocks.length);
+                let myNewBlock = emptyBlocks.splice(randomBlock, 1);
+                newState.set(myNewBlock, population);
+
+                population = movingPopulations.shift();
+            }
+
+            let emptyBlock = emptyBlocks.shift();
+            while (emptyBlock != undefined) {
+                newState.set(emptyBlock,0);
+            }
+
+            processQueue();
+        }
+
+        function amIMoving(myPopulation, myNeighbors) {
+            let likeMe = 0;
+            for (let neighbor of myNeighbors) {
+                let neighborPop = currentState.get(neighbor);
+                if (myPopulation == neighborPop) likeMe++;
+            }
+
+            return (likeMe/myNeighbors.length) <= tolerance;
+        }
     }
 
-    function searchCandidates(lastIteration) {
+    function saveResults() {
+        console.log('|-> saveResults()');
         processQueue();
     }
 }
@@ -367,6 +467,10 @@ if (input.length != 0 && input === 'yes') {
 input = rl.question("Populations ("+populations+' different populations): ');
 if (input.length != 0) populations = Number.parseInt(input);
 console.log('|-> Populations set to '+populations+' different populations');
+
+input = rl.question("Tolerance ("+tolerance+' tolerance factor): ');
+if (input.length != 0) tolerance = Number.parseFloat(input);
+console.log('|-> Tolerance factor set to '+tolerance+'');
 
 input = rl.question("Iterations ("+iterations+' schelling iterations): ');
 if (input.length != 0) iterations = Number.parseInt(input);
