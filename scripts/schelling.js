@@ -4,7 +4,7 @@ import * as geoHelper from 'geotabuladb'
 
 // CONSTANTS -----------------------------------------------------------------------------------------------------------
 const _NEIGHBORS_TABLE_SUFFIX = '_neighbor';
-const WORKERS = 10;
+const WORKERS = 3;
 
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
 let radius = 1000;
@@ -89,13 +89,13 @@ function pushTask(lastTask) {
 // SHARED OBJECTS ------------------------------------------------------------------------------------------------------
 let blocks = null;
 let numBlocks = -1;
-
 function queryBlocks() {
+    console.log(':+> queryBlocks()');
     blocks = [];
     getBlocks();
 
     function getBlocks() {
-        console.log(':+> getBlocks()');
+        console.log(':++> getBlocks()');
         let query = 'SELECT '+gid+' FROM '+out_table+';';
         registerSteps();
         geo.query(query, loadBlocks);
@@ -107,6 +107,61 @@ function queryBlocks() {
             blocks.push(block[gid]);
         }
         numBlocks = blocks.length;
+        processQueue();
+    }
+}
+
+let neighbors = null;
+let numNeighbors = 0;
+function queryNeighbors() {
+    console.log(':+> queryNeighbors()');
+    if (!blocks) {              // --> If the blocks had not been retrieved yet
+        queryBlocks();          // |-> Retrieve blocks..
+        addTask(queryNeighbors);// |-> and call me again when done...
+        processQueue();
+        return
+    }
+
+    let queries = [];
+    for (let block of blocks) {
+        let query = 'SELECT '+neighbor_gid+' FROM '+neighbors_table+' WHERE '+gid+'='+block+';';
+        queries.push([block,query]);
+    }
+
+    console.log(':++> loadNeighbors()');
+    neighbors = new Map();
+    let totalQueries = queries.length;
+    let hash2block = new Map();
+
+    let maxWorkers = totalQueries < WORKERS ? totalQueries : WORKERS;
+    for (let worker = 0; worker < maxWorkers; worker++) {
+        registerSteps();
+        loadNeighbors();
+    }
+
+    function loadNeighbors(blockNeighbors, hash) {
+        if (hash != undefined) {                // --> Recursion base condition
+            let block = hash2block.get(hash);
+            hash2block.delete(hash);
+
+            let myNeighbors = [];
+            for (let neighbor of blockNeighbors) {
+                myNeighbors.push(neighbor[gid]);
+                numNeighbors++;
+            }
+
+            neighbors.set(block, myNeighbors);
+        }
+
+        let nextQuery = queries.shift();
+        if (nextQuery != undefined) {           // --> Recursion termination condition
+            let block = nextQuery[0];
+            let query = nextQuery[1];
+
+            registerSteps();
+            hash2block.set(geo.query(query, loadNeighbors), block);
+            process.stdout.write('Progress: '+(1-(queries.length/totalQueries)).toFixed(4)+'\r');
+        }
         processQueue();
     }
 }
@@ -248,73 +303,15 @@ function genInitialPopulation() {
 let currentIteration = 1;
 function schelling() {
     console.log('\nschelling()');
-    loadNeighbors();
 
-    let neighbors = new Map();
-    function loadNeighbors() {
-        console.log('|-> loadNeighbors()');
-        queryBlocks();
-
-        function queryBlocks() {
-            console.log('|--> queryBlocks()');
-            let query = 'SELECT '+gid+' FROM '+out_table+';';
-            registerSteps();
-            geo.query(query, processBlocks);
-        }
-
-        let blocks = [];
-        let totalBlocks;
-        function processBlocks(allBlocks) {
-            console.log('|--> processBlocks()');
-            for (let block of allBlocks) {
-                blocks.push(block[gid]);
-            }
-
-            console.log('|--> registerNeighbors()');
-            totalBlocks = blocks.length;
-            process.stdout.write('Loading neighbors to RAM: ');
-            for (let worker = 0; worker < WORKERS; worker++) {
-                registerSteps();
-                registerNeighbors();
-            }
-
-            processQueue();
-        }
-
-        let doneBlocks = 0;
-        let nextReport = 0;
-        let hash2block = new Map();
-        function registerNeighbors(blockNeighbors, hash) {
-            if (hash != undefined) { // --> Recursion base condition
-                let block = hash2block.get(hash);
-                hash2block.delete(hash);
-
-                let myNeighbors = [];
-                for (let neighbor of blockNeighbors) {
-                    myNeighbors.push(neighbor[gid]);
-                }
-
-                neighbors.set(block, myNeighbors);
-                doneBlocks++;
-
-                let progress = doneBlocks/totalBlocks;
-
-                if(progress > nextReport) {
-                    let report = progress*100;
-                    process.stdout.write(' '+report.toFixed(0)+'%');
-                    nextReport += 0.05;
-                }
-            }
-
-            let nextBlock = blocks.shift();
-            if (nextBlock != undefined) { // --> Recursion termination condition
-                let query = 'SELECT '+neighbor_gid+' FROM '+neighbors_table+' WHERE '+gid+'='+nextBlock+';';
-                registerSteps();
-                hash2block.set(geo.query(query, registerNeighbors),nextBlock);
-            }
-            processQueue();
-        }
+    if (!neighbors) {          // --> If the blocks had not been retrieved yet
+        queryNeighbors();      // |-> Retrieve blocks..
+        addTask(schelling);// |-> and call me again when done...
+        processQueue();
+        return
     }
+
+    console.log(numNeighbors);
 
     function getLastIteration() {
         let query = 'SELECT '+gid+','+currentPop+' FROM '+out_table+' WHERE '+time+'='+(currentIteration-1);
@@ -323,10 +320,8 @@ function schelling() {
     }
 
     function searchCandidates(lastIteration) {
-
         processQueue();
     }
-
 }
 
 // SUPPORT FUNCTIONS ---------------------------------------------------------------------------------------------------
