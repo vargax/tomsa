@@ -231,7 +231,7 @@ function calculateNeighbors() {
 function genInitialPopulation() {
     console.log('\ngenInitialPopulation()');
     registerSteps();
-    addTask([clean, genQueries, done]);
+    addTask([clean, genQueries, done, vacuum]);
     processQueue();
 
     function clean() {
@@ -275,8 +275,8 @@ function genInitialPopulation() {
     }
 
     function done() {
+        registerSteps();
         console.log('|--> DONE Initial population generation!');
-        vacuum();
         processQueue();
     }
 }
