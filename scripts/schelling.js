@@ -147,6 +147,7 @@ function queryNeighbors() {
                 neighbors.set(myGid,[neighborGid]);
             }
         }
+        processQueue();
     }
 }
 
