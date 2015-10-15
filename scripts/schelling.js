@@ -55,6 +55,7 @@ function processQueue() {
             processQueue();
         }
     }
+    console.dir(queue);
 }
 
 /**
@@ -303,6 +304,7 @@ function genInitialPopulation() {
 
 function schelling() {
     console.log('\nschelling()');
+    registerSteps();
     queryInitialState();
 
     function queryInitialState() {
