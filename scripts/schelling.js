@@ -353,6 +353,7 @@ function schelling() {
         function processBlock() {
             let currentBlock = thisIterBlocks.shift();
             if (currentBlock == undefined) {        // --> Recursion termination condition
+                console.log('DONE');
                 processQueue();
                 return
             }
@@ -369,7 +370,7 @@ function schelling() {
                     newState.set(currentBlock, currentPop);
                 }
             }
-            process.stdout.write('Progress: '+(1-(thisIterBlocks.length/numBlocks)).toFixed(3)+'\r');
+            //process.stdout.write('Progress: '+(1-(thisIterBlocks.length/numBlocks)).toFixed(3)+'\r');
             processBlock();
         }
 
