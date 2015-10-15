@@ -30,7 +30,7 @@ let neighbor_distance = 'lineal_distance';
 let currentTask = null;
 let remainingSteps = 0;
 let queue = [
-    //genInitialPopulation,
+    genInitialPopulation,
     schelling
 ];
 let timeStamp = Date.now();
@@ -127,6 +127,7 @@ function queryNeighbors() {
         queryBlocks();          // |-> retrieve blocks..
         return
     }
+
     getNeighbors();
 
     function getNeighbors() {
@@ -286,37 +287,44 @@ function genInitialPopulation() {
 
 function schelling() {
     console.log('\nschelling()');
-    queryInitialState();
 
-    function queryInitialState() {
-        console.log('|--> queryInitialState()');
-        if (!neighbors) {               // --> If the neighbors had not been retrieved yet
-            addTask(queryInitialState); // |-> call me again when done the
-            queryNeighbors();           // |-> neighbors retrieval
-            return
-        }
-
-        let query = 'SELECT '+gid+','+currentPop+' FROM '+out_table+' WHERE '+time+'=0';
-
-        registerSteps();
-        geo.query(query, loadInitialState);
-    }
+    registerSteps();
+    addTask([prepare, simulate, saveResults]);
+    processQueue();
 
     let schellingSim = null;
     let currentIteration = 0;
-    function loadInitialState(initialState) {
-        console.log('|-> loadInitialState()');
-        let currentState = new Map();
-        for (let block of initialState) {
-            let blockId = block[gid];
-            let currentPop = Number.parseInt(block[currentPop]);
-            currentState.set(blockId, currentPop);
-        }
-        schellingSim = new Map();
-        schellingSim.set(0,currentState);
+    function prepare() {
+        console.log('|-> prepare()');
+        queryInitialState();
 
-        processQueue();
-        simulate();
+        function queryInitialState() {
+            console.log('|--> queryInitialState()');
+            if (!neighbors) {               // --> If the neighbors had not been retrieved yet
+                addTask(queryInitialState); // |-> call me again when done the
+                queryNeighbors();           // |-> neighbors retrieval
+                return
+            }
+
+            let query = 'SELECT '+gid+','+currentPop+' FROM '+out_table+' WHERE '+time+'=0';
+
+            registerSteps();
+            geo.query(query, loadInitialState);
+        }
+
+        function loadInitialState(initialState) {
+            console.log('|--> loadInitialState()');
+            let currentState = new Map();
+            for (let block of initialState) {
+                let blockId = block[gid];
+                let currentPop = Number.parseInt(block[currentPop]);
+                currentState.set(blockId, currentPop);
+            }
+            schellingSim = new Map();
+            schellingSim.set(0,currentState);
+
+            processQueue();
+        }
     }
 
     function simulate() {
