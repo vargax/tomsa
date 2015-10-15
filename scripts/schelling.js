@@ -352,26 +352,23 @@ function schelling() {
 
         function processBlock() {
             let currentBlock = thisIterBlocks.shift();
-            if (currentBlock == undefined) {        // --> Recursion termination condition
-                console.log('DONE');
-                processQueue();
-                return
-            }
-
-            let myPopulation = currentState.get(currentBlock);
-            if (myPopulation == 0) {                // --> If this is an empty block...
-                emptyBlocks.push(currentBlock);     // |-> Add block to available blocks...
-            } else {                                // |-> Else
-                let myNeighbors = neighbors.get(currentBlock);
-                if (amIMoving(myPopulation, myNeighbors)) {
-                    movingPopulations.push(myPopulation);
-                    emptyBlocks.push(currentBlock);
-                } else {
-                    newState.set(currentBlock, currentPop);
+            while (currentBlock != undefined) {
+                let myPopulation = currentState.get(currentBlock);
+                if (myPopulation == 0) {                // --> If this is an empty block...
+                    emptyBlocks.push(currentBlock);     // |-> Add block to available blocks...
+                } else {                                // |-> Else
+                    let myNeighbors = neighbors.get(currentBlock);
+                    if (amIMoving(myPopulation, myNeighbors)) {
+                        movingPopulations.push(myPopulation);
+                        emptyBlocks.push(currentBlock);
+                    } else {
+                        newState.set(currentBlock, currentPop);
+                    }
                 }
+                process.stdout.write('Progress: ' + (1 - (thisIterBlocks.length / numBlocks)).toFixed(3) + '\r');
+                currentBlock = thisIterBlocks.shift();
             }
-            //process.stdout.write('Progress: '+(1-(thisIterBlocks.length/numBlocks)).toFixed(3)+'\r');
-            processBlock();
+            processQueue();
         }
 
         function movingPop2emptyBlocks() {
