@@ -316,6 +316,7 @@ function schelling() {
             return
         }
 
+        registerSteps();
         if (initialState == undefined) { // --> Recursion base condition
             console.log('|--> queryInitialState');
             let query = 'SELECT '+gid+','+currentPop+' FROM '+out_table+' WHERE '+time+'=0';
