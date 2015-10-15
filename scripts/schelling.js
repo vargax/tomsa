@@ -30,7 +30,7 @@ let neighbor_distance = 'lineal_distance';
 let currentTask = null;
 let remainingSteps = 0;
 let queue = [
-    genInitialPopulation,
+    //genInitialPopulation,
     schelling
 ];
 let timeStamp = Date.now();
@@ -303,40 +303,39 @@ function genInitialPopulation() {
 
 function schelling() {
     console.log('\nschelling()');
-    loadInitialState();
+    queryInitialState();
+
+    function queryInitialState() {
+        console.log('|--> queryInitialState()');
+        if (!neighbors) {               // --> If the neighbors had not been retrieved yet
+            queryNeighbors();           // |-> Retrieve neighbors...
+            addTask(queryInitialState);  // |-> and call me again when done...
+            processQueue();
+            return
+        }
+
+        let query = 'SELECT '+gid+','+currentPop+' FROM '+out_table+' WHERE '+time+'=0';
+
+        registerSteps();
+        geo.query(query, loadInitialState);
+    }
 
     let schellingSim = null;
     let currentIteration = 0;
     function loadInitialState(initialState) {
         console.log('|-> loadInitialState()');
-        if (!neighbors) {               // --> If the neighbors had not been retrieved yet
-            queryNeighbors();           // |-> Retrieve neighbors...
-            addTask(loadInitialState);  // |-> and call me again when done...
-            processQueue();
-            return
+        let currentState = new Map();
+        for (let block of initialState) {
+            let blockId = block[gid];
+            let currentPop = Number.parseInt(block[currentPop]);
+            currentState.set(blockId, currentPop);
         }
+        schellingSim = new Map();
+        schellingSim.set(0,currentState);
 
         registerSteps();
-        if (initialState == undefined) { // --> Recursion base condition
-            console.log('|--> queryInitialState');
-            let query = 'SELECT '+gid+','+currentPop+' FROM '+out_table+' WHERE '+time+'=0';
-            registerSteps();
-            geo.query(query, loadInitialState);
-        } else {
-            console.log('|--> savingInitialState');
-            let currentState = new Map();
-            for (let block of initialState) {
-                let blockId = block[gid];
-                let currentPop = Number.parseInt(block[currentPop]);
-                currentState.set(blockId, currentPop);
-            }
-            schellingSim = new Map();
-            schellingSim.set(0,currentState);
+        simulate();
 
-            registerSteps();
-            simulate();
-        }
-        processQueue();
     }
 
     function simulate() {
