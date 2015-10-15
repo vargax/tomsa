@@ -55,6 +55,7 @@ function processQueue() {
             processQueue();
         }
     }
+    console.log(remainingSteps);
     console.dir(queue);
 }
 
