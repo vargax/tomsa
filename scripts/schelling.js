@@ -335,7 +335,7 @@ function schelling() {
         let emptyBlocks = [];
         let movingPopulations = [];
 
-        let blocks = blocks.slice();
+        let thisIterBlocks = blocks.slice();
         console.log('|--> processBlock()');
         let maxWorkers = numBlocks < WORKERS ? numBlocks : WORKERS;
         for (let worker = 0; worker < maxWorkers; worker++) {
@@ -352,7 +352,7 @@ function schelling() {
         processQueue();
 
         function processBlock() {
-            let currentBlock = blocks.shift();
+            let currentBlock = thisIterBlocks.shift();
             if (currentBlock == undefined) {        // --> Recursion termination condition
                 processQueue();
                 return
@@ -370,7 +370,7 @@ function schelling() {
                     newState.set(currentBlock, currentPop);
                 }
             }
-            process.stdout.write('Progress: '+(1-(blocks.length/numBlocks)).toFixed(3)+'\r');
+            process.stdout.write('Progress: '+(1-(thisIterBlocks.length/numBlocks)).toFixed(3)+'\r');
             processBlock();
         }
 
