@@ -36,6 +36,11 @@ let queue = [
 let timeStamp = Date.now();
 
 function processQueue() {
+    if (remainingSteps < 0) {
+        console.error('There is something wrong with your queue! remainingSteps='+remainingSteps);
+        console.dir(queue);
+    }
+
     if (!currentTask) {
         let currentTime = Date.now();
         console.log(':<-- Last task execution time: '+((currentTime - timeStamp)/1000)+' seconds');
@@ -55,8 +60,6 @@ function processQueue() {
             processQueue();
         }
     }
-    console.log(remainingSteps);
-    console.dir(queue);
 }
 
 /**
@@ -265,7 +268,6 @@ function genInitialPopulation() {
         if (!blocks) {          // --> If the blocks had not been retrieved yet
             queryBlocks();      // |-> Retrieve blocks..
             addTask(genQueries);// |-> and call me again when done...
-            processQueue();
             return
         }
 
@@ -305,7 +307,6 @@ function genInitialPopulation() {
 
 function schelling() {
     console.log('\nschelling()');
-    registerSteps();
     queryInitialState();
 
     function queryInitialState() {
@@ -313,7 +314,6 @@ function schelling() {
         if (!neighbors) {               // --> If the neighbors had not been retrieved yet
             queryNeighbors();           // |-> Retrieve neighbors...
             addTask(queryInitialState);  // |-> and call me again when done...
-            processQueue();
             return
         }
 
