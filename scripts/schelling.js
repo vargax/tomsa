@@ -30,7 +30,7 @@ let neighbor_distance = 'lineal_distance';
 let currentTask = null;
 let remainingSteps = 0;
 let queue = [
-    genInitialPopulation,
+    //genInitialPopulation,
     schelling
 ];
 let timeStamp = Date.now();
@@ -156,7 +156,7 @@ function queryNeighbors() {
 function calculateNeighbors() {
     console.log('\ncalculateNeighbors()');
     registerSteps();
-    addTask([clean, createTables, runQuery]);
+    addTask([clean, createTables, runQuery, done]);
     processQueue();
 
     function clean() {
@@ -219,19 +219,21 @@ function calculateNeighbors() {
         //query+= ' LIMIT 10';
 
         registerSteps();
-        geo.query(query, function() {
-            console.log('|--> DONE neighbors calculation!');
-            processQueue();
-        });
+        geo.query(query, processQueue);
+    }
 
+    function done() {
+        registerSteps();
+        console.log('|--> DONE neighbors calculation!');
         vacuum();
+        processQueue();
     }
 }
 
 function genInitialPopulation() {
     console.log('\ngenInitialPopulation()');
     registerSteps();
-    addTask([clean, genQueries, done]);
+    addTask([clean, setPop, done]);
     processQueue();
 
     function clean() {
@@ -243,11 +245,11 @@ function genInitialPopulation() {
         geo.query(query, processQueue);
     }
 
-    function genQueries() {
-        console.log('|-> genQueries()');
+    function setPop() {
+        console.log('|-> setPop()');
 
         if (!blocks) {              // --> If the blocks had not been retrieved yet
-            addTask(genQueries);    // |-> Call me again when you
+            addTask(setPop);    // |-> Call me again when you
             queryBlocks();          // |-> retrieve blocks..
             return
         }
