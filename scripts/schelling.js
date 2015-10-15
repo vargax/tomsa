@@ -142,7 +142,6 @@ function queryNeighbors() {
         neighbors = new Map();
 
         let currentTuple = allNeighbors.shift();
-
         while (currentTuple != undefined) {
             let myGid = currentTuple[gid];
             let neighborGid = currentTuple[neighbor_gid];
@@ -152,6 +151,8 @@ function queryNeighbors() {
             } catch (e) {
                 neighbors.set(myGid,[neighborGid]);
             }
+
+            currentTuple = allNeighbors.shift();
         }
 
         processQueue();
