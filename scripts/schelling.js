@@ -126,49 +126,27 @@ function queryNeighbors() {
         addTask(queryNeighbors);// |-> and call me again when done...
         return
     }
+    getNeighbors();
 
-    let queries = [];
-    for (let block of blocks) {
-        let query = 'SELECT '+neighbor_gid+' FROM '+neighbors_table+' WHERE '+gid+'='+block+';';
-        queries.push([block,query]);
-    }
-
-    console.log(':++> loadNeighbors()');
-    neighbors = new Map();
-    let totalQueries = queries.length;
-    let hash2block = new Map();
-
-    let maxWorkers = totalQueries < WORKERS ? totalQueries : WORKERS;
-    for (let worker = 0; worker < maxWorkers; worker++) {
+    function getNeighbors() {
+        console.log(':++> getNeighbors()');
+        let query = 'SELECT '+gid+','+neighbor_gid+' FROM '+neighbors_table+';';
         registerSteps();
-        loadNeighbors();
+        geo.query(query, loadNeighbors);
     }
 
-    function loadNeighbors(blockNeighbors, hash) {
-        if (hash != undefined) {                // --> Recursion base condition
-            let block = hash2block.get(hash);
-            hash2block.delete(hash);
-
-            let myNeighbors = [];
-            for (let neighbor of blockNeighbors) {
-                myNeighbors.push(neighbor[gid]);
-                numNeighbors++;
+    function loadNeighbors(allNeighbors) {
+        console.log(':++> loadNeighbors()');
+        neighbors = new Map();
+        for (let tuple of allNeighbors) {
+            let myGid = tuple[gid];
+            let neighborGid = tuple[neighbor_gid];
+            try {
+                neighbors.get(myGid).push(neighborGid);
+            } catch (e) {
+                neighbors.set(myGid,[neighborGid]);
             }
-
-            neighbors.set(block, myNeighbors);
         }
-
-        let nextQuery = queries.shift();
-        if (nextQuery == undefined) {           // --> Recursion termination condition
-            processQueue();
-            return
-        }
-
-        let block = nextQuery[0];
-        let query = nextQuery[1];
-
-        hash2block.set(geo.query(query, loadNeighbors), block);
-        process.stdout.write('Progress: '+(1-(queries.length/totalQueries)).toFixed(3)+'\r');
     }
 }
 
