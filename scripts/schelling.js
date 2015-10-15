@@ -338,10 +338,10 @@ function schelling() {
         let thisIterBlocks = blocks.slice();
         console.log('|--> processBlock()');
         let maxWorkers = numBlocks < WORKERS ? numBlocks : WORKERS;
-        //for (let worker = 0; worker < maxWorkers; worker++) {
+        for (let worker = 0; worker < maxWorkers; worker++) {
             registerSteps();
             processBlock();
-        //}
+        }
 
         currentIteration++;
         schellingSim.set(currentIteration, newState);
