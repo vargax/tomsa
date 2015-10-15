@@ -230,14 +230,14 @@ function calculateNeighbors() {
 
 function genInitialPopulation() {
     console.log('\ngenInitialPopulation()');
-    clean();
+    registerSteps();
+    addTask([clean, genQueries, done]);
+    processQueue();
 
     function clean() {
         console.log('|-> clean()');
         let query = 'DELETE FROM '+out_table+' WHERE '+time+'<> 0;';
         query += 'UPDATE '+out_table+' SET '+currentPop+'=-1;';
-
-        addTask(genQueries);
 
         registerSteps();
         geo.query(query, processQueue);
@@ -271,9 +271,7 @@ function genInitialPopulation() {
         query+='UPDATE '+out_table+' SET '+currentPop+'=0 WHERE '+currentPop+'= -1;';
 
         registerSteps();
-        geo.query(query, done);
-
-        processQueue();
+        geo.query(query, processQueue);
     }
 
     function done() {
