@@ -61,9 +61,11 @@ function processQueue() {
         }
     }
 
+    console.log('!! CURRENT_TASK:');
     console.dir(currentTask);
     console.log('!! rmSTEPS: '+remainingSteps);
-    console.log('!! QUEUE: '+queue);
+    console.log('!! QUEUE:');
+    console.dir(queue);
 }
 
 /**
