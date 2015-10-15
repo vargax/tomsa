@@ -36,10 +36,10 @@ let queue = [
 let timeStamp = Date.now();
 
 function processQueue() {
-    if (remainingSteps < 0) {
+    //if (remainingSteps < 0) {
         console.error('There is something wrong with your queue! remainingSteps='+remainingSteps);
         console.dir(queue);
-    }
+    //}
 
     if (!currentTask) {
         let currentTime = Date.now();
