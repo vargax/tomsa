@@ -357,7 +357,8 @@ function schelling() {
 
             console.log('before for');
             for (let [myGid, myPopulation] of lastState) {
-                nextState.set(myGid,myPopulation);
+                emptyBlocks.push(myGid);
+                movingPopulations.push(myPopulation);
 
                 //if (myPopulation == 0) {                // --> If this is an empty block...
                 //    emptyBlocks.push(myGid);            // |-> Add block to available blocks...
@@ -390,7 +391,7 @@ function schelling() {
 
         function movingPop2emptyBlocks() {
             registerSteps();
-            console.log('|--> movingPop2emptyBlocks()');
+            console.log('|--> movingPop2emptyBlocks() :: '+movingPopulations.length+' :: '+emptyBlocks.length);
 
             for (let population of movingPopulations) {
                 let randomBlock = Math.floor(Math.random() * emptyBlocks.length);
