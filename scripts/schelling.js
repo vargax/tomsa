@@ -45,7 +45,7 @@ function processQueue() {
         let currentTime = Date.now();
         console.log(':<-- Last task execution time: '+((currentTime - timeStamp)/1000)+' seconds');
         timeStamp = currentTime;
-        //console.dir(queue);
+        console.dir(queue);
 
         currentTask = queue.shift();
         try {
@@ -84,7 +84,7 @@ function addTask(nextTask) {
     } else {
         queue.unshift(nextTask);
     }
-    console.dir(queue);
+    //console.dir(queue);
 }
 /**
  * Adds a new task to the end of the queue.
@@ -350,7 +350,7 @@ function schelling() {
         addTask(movingPop2emptyBlocks);
 
         function processBlock() {
-            let currentBlock = thisIterBlocks.shift();
+            let currentBlock = thisIterBlocks.pop();
             while (currentBlock != undefined) {
                 let myPopulation = currentState.get(currentBlock);
                 if (myPopulation == 0) {                // --> If this is an empty block...
@@ -374,17 +374,17 @@ function schelling() {
             registerSteps();
             console.log('|--> movingPop2emptyBlocks()');
 
-            let population = movingPopulations.shift();
+            let population = movingPopulations.pop();
             while (population != undefined) {
 
                 let randomBlock = Math.floor(Math.random() * emptyBlocks.length);
                 let myNewBlock = emptyBlocks.splice(randomBlock, 1);
                 newState.set(myNewBlock, population);
 
-                population = movingPopulations.shift();
+                population = movingPopulations.pop();
             }
 
-            let emptyBlock = emptyBlocks.shift();
+            let emptyBlock = emptyBlocks.pop();
             while (emptyBlock != undefined) {
                 newState.set(emptyBlock,0);
             }
