@@ -353,29 +353,18 @@ function schelling() {
 
         function processBlock() {
             console.log('|--> processBlock() '+lastState.size+' blocks');
-            let empty=0, moving=0, stay=0;
 
-            console.log('before for');
             for (let [myGid, myPopulation] of lastState) {
-                emptyBlocks.push(myGid);
-                movingPopulations.push(myPopulation);
-
-                //if (myPopulation == 0) {                // --> If this is an empty block...
-                //    emptyBlocks.push(myGid);            // |-> Add block to available blocks...
-                //    empty++;
-                //} else {                                // |-> Else
-                //    let myNeighbors = neighbors.get(myGid);
-                //    if (amIMoving(myPopulation, myNeighbors)) {
-                //        movingPopulations.push(myPopulation);
-                //        emptyBlocks.push(myGid);
-                //        moving++;
-                //    } else {
-                //        nextState.set(myGid, myPopulation);
-                //        stay++;
-                //    }
-                //}
+                if (myPopulation == 0) {
+                    emptyBlocks.push(myGid);
+                } else if (amIMoving(myPopulation, neighbors.get(myGid))) {
+                    movingPopulations.push(myPopulation);
+                    emptyBlocks.push(myGid);
+                } else {
+                    nextState.set(myGid, myPopulation);
+                }
             }
-            console.log('     Empty '+empty+' :: Moving '+moving+' :: Stay '+stay);
+            console.log('     Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
             processQueue();
 
             function amIMoving(myPopulation, myNeighbors) {
