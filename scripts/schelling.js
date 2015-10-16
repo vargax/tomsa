@@ -335,7 +335,7 @@ function schelling() {
         currentIteration++;
 
         console.log('|-> simulate() :: '+currentIteration+' iteration ('+(iterations-currentIteration)+' remaining)');
-        let newState = new Map();
+        let newState = new Map(); // --> The KEY is the block gid, the VALUE is the currentPop in that block.
         let emptyBlocks = [];
         let movingPopulations = [];
 
@@ -396,14 +396,23 @@ function schelling() {
             processQueue();
         }
 
+        let hash2inserts = new Map();
         function saveResults() {
             registerSteps();
             console.log('|---> saveResults() for '+currentIteration);
 
-            let values = schellingIterations[currentIteration].entries();
-            console.dir(values);
+            let values = [];
+            for (let [blockGid, blockCurrentPop] of schellingIterations[currentIteration])
+                values.push([time, blockGid, blockCurrentPop]);
+
+            let query = geoHelper.QueryBuilder.insertInto(out_table,[time,gid,currentPop],values);
+            hash2inserts.set(geo.query(query, queryCallback), currentIteration);
 
             processQueue();
+
+            function queryCallback(noResult, hash) {
+                console.log(':----> Insert for '+hash2inserts.get(hash)+' iteration DONE!');
+            }
         }
     }
 }
