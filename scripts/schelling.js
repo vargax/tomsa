@@ -355,7 +355,9 @@ function schelling() {
             console.log('|--> processBlock() '+lastState.size+' blocks');
             let empty=0, moving=0, stay=0;
 
+            console.log('before for');
             for (let [myGid, myPopulation] of lastState) {
+                console.log('in for');
                 if (myPopulation == 0) {                // --> If this is an empty block...
                     emptyBlocks.push(myGid);            // |-> Add block to available blocks...
                     empty++;
@@ -371,15 +373,19 @@ function schelling() {
                     }
                 }
             }
+            console.log('after for');
             console.log('     Empty '+empty+' :: Moving '+moving+' :: Stay '+stay);
             processQueue();
 
             function amIMoving(myPopulation, myNeighbors) {
                 let likeMe = 0;
+                console.log('++ before for');
                 for (let neighbor of myNeighbors) {
+                    console.log('++ in for');
                     let neighborPop = lastState.get(neighbor);
                     if (myPopulation == neighborPop) likeMe++;
                 }
+                console.log('++ after for');
 
                 return (likeMe/myNeighbors.length) <= tolerance;
             }
@@ -407,14 +413,14 @@ function schelling() {
             registerSteps();
             console.log('|---> saveResults() for '+currentIteration+' :: '+nextState.size+' blocks to save');
 
-            //let columns = [time,gid,currentPop];
-            //let values = [];
-            //for (let [myGid, myPopulation] of nextState)
-            //    values.push([currentIteration, myGid, myPopulation]);
-            //
-            //let query = geoHelper.QueryBuilder.insertInto(out_table,columns,values);
-            //console.log(query.substring(0, 100));
-            //hash2inserts.set(geo.query(query, queryCallback), currentIteration);
+            let columns = [time,gid,currentPop];
+            let values = [];
+            for (let [myGid, myPopulation] of nextState)
+                values.push([currentIteration, myGid, myPopulation]);
+
+            let query = geoHelper.QueryBuilder.insertInto(out_table,columns,values);
+            console.log(query.substring(0, 100));
+            hash2inserts.set(geo.query(query, queryCallback), currentIteration);
 
             processQueue();
 
