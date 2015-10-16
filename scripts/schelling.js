@@ -372,18 +372,15 @@ function schelling() {
                     }
                 }
             }
-            console.log('after for');
             console.log('     Empty '+empty+' :: Moving '+moving+' :: Stay '+stay);
             processQueue();
 
             function amIMoving(myPopulation, myNeighbors) {
                 let likeMe = 0;
-                console.log('++ before for');
                 for (let neighbor of myNeighbors) {
                     let neighborPop = lastState.get(neighbor);
                     if (myPopulation == neighborPop) likeMe++;
                 }
-                console.log('++ after for');
 
                 return (likeMe/myNeighbors.length) <= tolerance;
             }
