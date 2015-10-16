@@ -277,7 +277,8 @@ function genInitialPopulation() {
         query+='UPDATE '+out_table+' SET '+currentPop+'=0 WHERE '+currentPop+'= -1;';
 
         registerSteps();
-        geo.query(query, processQueue);
+        //geo.query(query, processQueue);
+	processQueue();
     }
 
     function done() {
@@ -350,7 +351,7 @@ function schelling() {
         processBlock();
 
         function processBlock() {
-            console.log('|--> processBlock()');
+            console.log('|--> processBlock()'+currentState.size);
             let empty=0, moving=0, stay=0;
 
                 for (let [myGid, myPopulation] of currentState) {
