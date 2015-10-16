@@ -36,14 +36,15 @@ let queue = [
 let timeStamp = Date.now();
 
 function processQueue() {
+    console.log(': <-- processQueue()');
     if (remainingSteps < 0) {
-        console.error('There is something wrong with your queue! remainingSteps='+remainingSteps);
-        console.dir(queue);
+        console.error('! <-- There is something wrong with your queue! remainingSteps='+remainingSteps);
+        //console.dir(queue);
     }
 
     if (!currentTask) {
         let currentTime = Date.now();
-        console.log(':<-- Last task execution time: '+((currentTime - timeStamp)/1000)+' seconds');
+        console.log(': <-- Last task execution time: '+((currentTime - timeStamp)/1000)+' seconds');
         timeStamp = currentTime;
         console.dir(queue);
 
@@ -99,19 +100,19 @@ function pushTask(lastTask) {
 let blocks = null;
 let numBlocks = -1;
 function queryBlocks() {
-    console.log(':+> queryBlocks()');
+    console.log(':-> queryBlocks()');
     blocks = [];
     getBlocks();
 
     function getBlocks() {
-        console.log(':++> getBlocks()');
+        console.log(':--> getBlocks()');
         let query = 'SELECT '+gid+' FROM '+out_table+';';
         registerSteps();
         geo.query(query, loadBlocks);
     }
 
     function loadBlocks(allBlocks) {
-        console.log(':++> loadBlocks()');
+        console.log(':--> loadBlocks()');
         for (let block of allBlocks) {
             blocks.push(block[gid]);
         }
@@ -123,7 +124,7 @@ function queryBlocks() {
 let neighbors = null;
 let numNeighbors = 0;
 function queryNeighbors() {
-    console.log(':+> queryNeighbors()');
+    console.log(':-> queryNeighbors()');
     if (!blocks) {              // --> If the blocks had not been retrieved yet
         addTask(queryNeighbors);// |-> Call me again when you
         queryBlocks();          // |-> retrieve blocks..
@@ -133,14 +134,14 @@ function queryNeighbors() {
     getNeighbors();
 
     function getNeighbors() {
-        console.log(':++> getNeighbors()');
+        console.log(':--> getNeighbors()');
         let query = 'SELECT '+gid+','+neighbor_gid+' FROM '+neighbors_table+';';
         registerSteps();
         geo.query(query, loadNeighbors);
     }
 
     function loadNeighbors(allNeighbors) {
-        console.log(':++> loadNeighbors()');
+        console.log(':--> loadNeighbors()');
         neighbors = new Map();
         for (let tuple of allNeighbors) {
             let myGid = tuple[gid];
