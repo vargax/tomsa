@@ -243,7 +243,7 @@ function genInitialPopulation() {
     function clean() {
         console.log('|-> clean()');
         let query = 'DELETE FROM '+out_table+' WHERE '+time+'<> 0;';
-        query += 'UPDATE '+out_table+' SET '+currentPop+'=-1;';
+        //query += 'UPDATE '+out_table+' SET '+currentPop+'=-1;';
 
         registerSteps();
         geo.query(query, processQueue);
@@ -277,7 +277,8 @@ function genInitialPopulation() {
         query+='UPDATE '+out_table+' SET '+currentPop+'=0 WHERE '+currentPop+'= -1;';
 
         registerSteps();
-        geo.query(query, processQueue);
+        //geo.query(query, processQueue);
+        processQueue();
     }
 
     function done() {
@@ -353,6 +354,13 @@ function schelling() {
         function processBlock() {
             console.log('|--> processBlock() '+lastState.size+' blocks');
             console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
+
+            let i = 0;
+            for (let [myGid, myPopulation] of lastState) {
+                i+= myGid+myPopulation;
+            }
+            console.log(i); console.dir(lastState);
+
             for (let [myGid, myPopulation] of lastState) {
                 if (myPopulation == 0) {
                     emptyBlocks.push(myGid);
