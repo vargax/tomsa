@@ -30,7 +30,7 @@ let neighbor_distance = 'lineal_distance';
 let currentTask = null;
 let remainingSteps = 0;
 let queue = [
-    genInitialPopulation,
+    //genInitialPopulation,
     schelling
 ];
 let timeStamp = Date.now();
@@ -327,6 +327,15 @@ function schelling() {
             }
             schellingIterations = [];
             schellingIterations.push(currentState);
+
+
+            let i = 0;
+            for (let tuple of currentState) {
+                console.log(tuple);
+                i++;
+                if (i > 300) break;
+            }
+
 
             processQueue();
         }
