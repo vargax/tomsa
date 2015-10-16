@@ -400,7 +400,8 @@ function schelling() {
             registerSteps();
             console.log('|---> saveResults() for '+currentIteration);
 
-            console.dir(schellingIterations[currentIteration]);
+            let values = schellingIterations[currentIteration].entries();
+            console.dir(values);
 
             processQueue();
         }
