@@ -39,14 +39,14 @@ function processQueue() {
     console.log(': <-- processQueue()');
     if (remainingSteps < 0) {
         console.error('! <-- There is something wrong with your queue! remainingSteps='+remainingSteps);
-        //console.dir(queue);
+        console.dir(queue);
     }
 
     if (!currentTask) {
         let currentTime = Date.now();
         console.log(': <-- Last task execution time: '+((currentTime - timeStamp)/1000)+' seconds');
         timeStamp = currentTime;
-        console.dir(queue);
+        //console.dir(queue);
 
         currentTask = queue.shift();
         try {
