@@ -365,7 +365,7 @@ function schelling() {
                     }
                 }
                 process.stdout.write('Progress: ' + (1 - (thisIterBlocks.length / numBlocks)).toFixed(3) + '\r');
-                currentBlock = thisIterBlocks.shift();
+                currentBlock = thisIterBlocks.pop();
             }
             processQueue();
         }
