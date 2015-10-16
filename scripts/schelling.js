@@ -291,12 +291,14 @@ function genInitialPopulation() {
 function schelling() {
     console.log('\nschelling()');
 
+    let schellingIterations = null;
+    let currentIteration = 0;
+    let hash2inserts = new Map();
+
     registerSteps();
     addTask([prepare, simulate]);
     processQueue();
 
-    let schellingIterations = null;
-    let currentIteration = 0;
     function prepare() {
         console.log('|-> prepare()');
         queryInitialState();
@@ -396,7 +398,6 @@ function schelling() {
             processQueue();
         }
 
-        let hash2inserts = new Map();
         function saveResults() {
             registerSteps();
             console.log('|---> saveResults() for '+currentIteration);
