@@ -398,7 +398,10 @@ function schelling() {
 
     function saveResults() {
         console.log('|-> saveResults()');
-        console.dir(queue);
+        console.log('Schelling Sim size:'+schellingSim.size);
+        for (let iter of schellingSim) {
+            console.log(iter);
+        }
 
         processQueue();
     }
