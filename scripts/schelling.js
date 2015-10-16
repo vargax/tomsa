@@ -331,17 +331,17 @@ function schelling() {
     }
 
     function simulate() {
-        console.log('|-> simulate() :: '+currentIteration);
         let currentState = schellingSim.get(currentIteration);
-        let newState = new Map();
+        currentIteration++;
 
+        console.log('|-> simulate() :: '+currentIteration);
+        let newState = new Map();
         let emptyBlocks = [];
         let movingPopulations = [];
 
-        if (currentIteration < iterations) addTask(simulate);
+        if (currentIteration <= iterations) addTask(simulate);
         addTask(movingPop2emptyBlocks);
 
-        currentIteration++;
         schellingSim.set(currentIteration, newState);
 
         let thisIterBlocks = blocks.slice();
