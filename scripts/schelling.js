@@ -408,7 +408,7 @@ function schelling() {
 
             let columns = [time,gid,currentPop];
             let values = [];
-            for (let [myGid, myPopulation] of currentState)
+            for (let [myGid, myPopulation] of newState)
                 values.push([currentIteration, myGid, myPopulation]);
 
             let query = geoHelper.QueryBuilder.insertInto(out_table,columns,values);
