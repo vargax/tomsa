@@ -86,7 +86,7 @@ function addTask(nextTask) {
     } else {
         queue.unshift(nextTask);
     }
-    console.dir(queue);
+    //console.dir(queue);
 }
 /**
  * Adds a new task to the end of the queue.
