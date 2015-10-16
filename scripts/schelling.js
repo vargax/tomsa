@@ -75,6 +75,7 @@ function registerSteps(numSteps = 1) {
  * @param nextTask :: Reference to the function to be executed.
  */
 function addTask(nextTask) {
+    console.log(': <-- AddTask'+nextTask);
     if (Array.isArray(nextTask)) {
         let task = nextTask.pop();
         while (task != undefined) {
@@ -84,7 +85,7 @@ function addTask(nextTask) {
     } else {
         queue.unshift(nextTask);
     }
-    //console.dir(queue);
+    console.dir(queue);
 }
 /**
  * Adds a new task to the end of the queue.
