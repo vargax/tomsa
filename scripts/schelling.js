@@ -380,35 +380,43 @@ function schelling() {
 
         function movingPop2emptyBlocks() {
             registerSteps();
-            console.log('|--> movingPop2emptyBlocks() :: '+movingPopulations.length+' :: '+emptyBlocks.length);
-            console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
+            console.log('|--> movingPop2emptyBlocks()');
+            console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
 
-            for (let population of movingPopulations) {
+            let population = movingPopulations.pop();
+            while (population != undefined) {
                 let randomBlock = Math.floor(Math.random() * emptyBlocks.length);
                 let myNewBlock = emptyBlocks.splice(randomBlock, 1);
                 nextState.set(myNewBlock, population);
+                population = movingPopulations.pop();
             }
 
-            for (let emptyBlock of emptyBlocks) {
+            let emptyBlock = emptyBlocks.pop();
+            while (emptyBlock != undefined) {
                 nextState.set(emptyBlock,0);
+                emptyBlock = emptyBlocks.pop();
             }
 
-            console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
+            console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
             addTask(saveResults);
             processQueue();
         }
 
         function saveResults() {
             registerSteps();
-            console.log('|---> saveResults() for '+currentIteration+' :: '+nextState.size+' blocks to save');
+            console.log('|--> saveResults()');
+            console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
 
             let columns = [time,gid,currentPop];
             let values = [];
-            for (let [myGid, myPopulation] of nextState)
+            for (let [myGid, myPopulation] of nextState) {
                 values.push([currentIteration, myGid, myPopulation]);
+                nextState.delete(myGid);
+            }
+
+            console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
 
             let query = geoHelper.QueryBuilder.insertInto(out_table,columns,values);
-            console.log(query.substring(0, 100));
             hash2inserts.set(geo.query(query, queryCallback), currentIteration);
 
             processQueue();
