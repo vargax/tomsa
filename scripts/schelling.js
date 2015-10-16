@@ -30,7 +30,7 @@ let neighbor_distance = 'lineal_distance';
 let currentTask = null;
 let remainingSteps = 0;
 let queue = [
-    genInitialPopulation,
+    //genInitialPopulation,
     schelling
 ];
 let timeStamp = Date.now();
@@ -324,6 +324,8 @@ function schelling() {
                 let blockId = block[gid];
                 let blockPop = Number.parseInt(block[currentPop]);
                 currentState.set(blockId, blockPop);
+                console.dir(block);
+                console.log(blockId+' :: '+blockPop);
             }
             schellingIterations = [];
             schellingIterations.push(currentState);
@@ -402,11 +404,12 @@ function schelling() {
             registerSteps();
             console.log('|---> saveResults() for '+currentIteration);
 
+            let columns = [time,gid,currentPop];
             let values = [];
             for (let [blockGid, blockCurrentPop] of schellingIterations[currentIteration])
                 values.push([currentIteration, blockGid, blockCurrentPop]);
 
-            let query = geoHelper.QueryBuilder.insertInto(out_table,[time,gid,currentPop],values);
+            let query = geoHelper.QueryBuilder.insertInto(out_table,columns,values);
             console.log(query.substring(0, 100));
             hash2inserts.set(geo.query(query, queryCallback), currentIteration);
 
