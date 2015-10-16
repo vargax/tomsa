@@ -207,7 +207,7 @@ function calculateNeighbors() {
         query += 'ALTER TABLE '+neighbors_table+' ADD CONSTRAINT '+neighbors_table+'_pk PRIMARY KEY('+gid+','+neighbor_gid+');';
         geo.query(query, processQueue);
 
-        vacuum();
+        scheduleVACUUM();
     }
 
     function runQuery() {
@@ -229,7 +229,7 @@ function calculateNeighbors() {
     function done() {
         registerSteps();
         console.log('|--> DONE neighbors calculation!');
-        vacuum();
+        scheduleVACUUM();
         processQueue();
     }
 }
@@ -283,7 +283,7 @@ function genInitialPopulation() {
     function done() {
         registerSteps();
         console.log('|--> DONE Initial population generation!');
-        vacuum();
+        scheduleVACUUM();
         processQueue();
     }
 }
@@ -295,7 +295,7 @@ function schelling() {
     addTask([prepare, simulate]);
     processQueue();
 
-    let schellingSim = null;
+    let schellingIterations = null;
     let currentIteration = 0;
     function prepare() {
         console.log('|-> prepare()');
@@ -323,18 +323,18 @@ function schelling() {
                 let currentPop = Number.parseInt(block[currentPop]);
                 currentState.set(blockId, currentPop);
             }
-            schellingSim = new Map();
-            schellingSim.set(0,currentState);
+            schellingIterations = [];
+            schellingIterations.push(currentState);
 
             processQueue();
         }
     }
 
     function simulate() {
-        let currentState = schellingSim.get(currentIteration);
+        let currentState = schellingIterations[currentIteration];
         currentIteration++;
 
-        console.log('|-> simulate() :: '+currentIteration);
+        console.log('|-> simulate() :: '+currentIteration+' iteration ('+(iterations-currentIteration)+' remaining)');
         let newState = new Map();
         let emptyBlocks = [];
         let movingPopulations = [];
@@ -342,7 +342,7 @@ function schelling() {
         if (currentIteration <= iterations) addTask(simulate);
         addTask(movingPop2emptyBlocks);
 
-        schellingSim.set(currentIteration, newState);
+        schellingIterations.push(newState);
 
         let thisIterBlocks = blocks.slice();
         console.log('|--> processBlock()');
@@ -399,10 +399,8 @@ function schelling() {
         function saveResults() {
             registerSteps();
             console.log('|---> saveResults() for '+currentIteration);
-            console.log('Schelling Sim size:'+schellingSim.size);
-            for (let iter of schellingSim) {
-                console.log(iter[0]+' :: '+iter[1].size);
-            }
+
+            console.dir(schellingIterations[currentIteration]);
 
             processQueue();
         }
@@ -410,12 +408,14 @@ function schelling() {
 }
 
 // SUPPORT FUNCTIONS ---------------------------------------------------------------------------------------------------
-function vacuum() {
-    addTask(function() {
+function scheduleVACUUM() {
+    addTask(vacuum);
+
+    function vacuum() {
         console.log('|-> VACUUM');
         registerSteps();
         geo.query('VACUUM', processQueue);
-    });
+    }
 }
 
 // SCRIPT --------------------------------------------------------------------------------------------------------------
