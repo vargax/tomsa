@@ -334,7 +334,6 @@ function schelling() {
 
     function simulate() {
         let lastState = schellingIterations[currentIteration];
-        let i=0;
 
         currentIteration++;
 
@@ -398,7 +397,7 @@ function schelling() {
             }
 
             console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
-            addTask(saveResults);
+            //addTask(saveResults);
             processQueue();
         }
 
