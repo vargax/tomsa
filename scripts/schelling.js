@@ -277,8 +277,7 @@ function genInitialPopulation() {
         query+='UPDATE '+out_table+' SET '+currentPop+'=0 WHERE '+currentPop+'= -1;';
 
         registerSteps();
-        //geo.query(query, processQueue);
-	processQueue();
+        geo.query(query, processQueue);
     }
 
     function done() {
