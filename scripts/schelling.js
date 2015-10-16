@@ -358,9 +358,10 @@ function schelling() {
             for (let [myGid, myPopulation] of lastState) {
                 if (myPopulation == 0) {
                     emptyBlocks.push(myGid);
-                } else if (amIMoving(myPopulation, neighbors.get(myGid))) {
-                    //movingPopulations.push(myPopulation);
-                    //emptyBlocks.push(myGid);
+                //} else if (amIMoving(myPopulation, neighbors.get(myGid))) {
+                } else if (Math.random() > 0.5) {
+                    movingPopulations.push(myPopulation);
+                    emptyBlocks.push(myGid);
                 } else {
                     nextState.set(myGid, myPopulation);
                 }
