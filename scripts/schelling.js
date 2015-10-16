@@ -409,10 +409,8 @@ function schelling() {
 
             let columns = [time,gid,currentPop];
             let values = [];
-            for (let [myGid, myPopulation] of nextState) {
+            for (let [myGid, myPopulation] of nextState)
                 values.push([currentIteration, myGid, myPopulation]);
-                nextState.delete(myGid);
-            }
 
             console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
 
