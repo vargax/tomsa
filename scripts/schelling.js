@@ -36,7 +36,7 @@ let queue = [
 let timeStamp = Date.now();
 
 function processQueue() {
-    console.log(': <-- processQueue()');
+    //console.log(': <-- processQueue()');
     if (remainingSteps < 0) {
         console.error('! <-- There is something wrong with your queue! remainingSteps='+remainingSteps);
         console.dir(queue);
