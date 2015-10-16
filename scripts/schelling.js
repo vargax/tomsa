@@ -407,7 +407,7 @@ function schelling() {
                 values.push([time, blockGid, blockCurrentPop]);
 
             let query = geoHelper.QueryBuilder.insertInto(out_table,[time,gid,currentPop],values);
-            console.log(query.substring(0, 40));
+            console.log(query.substring(0, 100));
             hash2inserts.set(geo.query(query, queryCallback), currentIteration);
 
             processQueue();
