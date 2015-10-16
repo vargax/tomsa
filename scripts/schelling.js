@@ -322,8 +322,8 @@ function schelling() {
             let currentState = new Map();
             for (let block of initialState) {
                 let blockId = block[gid];
-                let currentPop = Number.parseInt(block[currentPop]);
-                currentState.set(blockId, currentPop);
+                let blockPop = Number.parseInt(block[currentPop]);
+                currentState.set(blockId, blockPop);
             }
             schellingIterations = [];
             schellingIterations.push(currentState);
@@ -404,7 +404,7 @@ function schelling() {
 
             let values = [];
             for (let [blockGid, blockCurrentPop] of schellingIterations[currentIteration])
-                values.push([time, blockGid, blockCurrentPop]);
+                values.push([currentIteration, blockGid, blockCurrentPop]);
 
             let query = geoHelper.QueryBuilder.insertInto(out_table,[time,gid,currentPop],values);
             console.log(query.substring(0, 100));
