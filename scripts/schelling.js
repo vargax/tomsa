@@ -292,7 +292,7 @@ function schelling() {
     console.log('\nschelling()');
 
     registerSteps();
-    addTask([prepare, simulate, saveResults]);
+    addTask([prepare, simulate]);
     processQueue();
 
     let schellingSim = null;
@@ -338,7 +338,7 @@ function schelling() {
         let emptyBlocks = [];
         let movingPopulations = [];
 
-        currentIteration < iterations ? addTask(simulate) : addTask(saveResults);
+        if (currentIteration < iterations) addTask(simulate);
         addTask(movingPop2emptyBlocks);
 
         currentIteration++;
@@ -366,6 +366,16 @@ function schelling() {
                 //process.stdout.write('Progress: ' + (1 - (thisIterBlocks.length / numBlocks)).toFixed(3) + '\r');
             }
             processQueue();
+
+            function amIMoving(myPopulation, myNeighbors) {
+                let likeMe = 0;
+                for (let neighbor of myNeighbors) {
+                    let neighborPop = currentState.get(neighbor);
+                    if (myPopulation == neighborPop) likeMe++;
+                }
+
+                return (likeMe/myNeighbors.length) <= tolerance;
+            }
         }
 
         function movingPop2emptyBlocks() {
@@ -382,29 +392,20 @@ function schelling() {
                 newState.set(emptyBlock,0);
             }
 
+            addTask(saveResults);
             processQueue();
         }
 
-        function amIMoving(myPopulation, myNeighbors) {
-            let likeMe = 0;
-            for (let neighbor of myNeighbors) {
-                let neighborPop = currentState.get(neighbor);
-                if (myPopulation == neighborPop) likeMe++;
+        function saveResults() {
+            registerSteps();
+            console.log('|---> saveResults() for '+currentIteration);
+            console.log('Schelling Sim size:'+schellingSim.size);
+            for (let iter of schellingSim) {
+                console.log(iter[0]+' :: '+iter[1].size);
             }
 
-            return (likeMe/myNeighbors.length) <= tolerance;
+            processQueue();
         }
-    }
-
-    function saveResults() {
-        registerSteps();
-        console.log('|-> saveResults()');
-        console.log('Schelling Sim size:'+schellingSim.size);
-        for (let iter of schellingSim) {
-            console.log(iter[0]+' :: '+iter[1].size);
-        }
-
-        processQueue();
     }
 }
 
