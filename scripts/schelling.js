@@ -328,15 +328,6 @@ function schelling() {
             schellingIterations = [];
             schellingIterations.push(currentState);
 
-
-            let i = 0;
-            for (let tuple of currentState) {
-                console.log(tuple);
-                i++;
-                if (i > 300) break;
-            }
-
-
             processQueue();
         }
     }
@@ -362,19 +353,18 @@ function schelling() {
             console.log('|--> processBlock()');
             let empty=0, moving=0, stay=0;
 
-                for (let currentBlock of blocks) {
-                let myPopulation = currentState.get(currentBlock);
+                for (let [myGid, myPopulation] of currentState) {
                 if (myPopulation == 0) {                // --> If this is an empty block...
-                    emptyBlocks.push(currentBlock);     // |-> Add block to available blocks...
+                    emptyBlocks.push(myGid);            // |-> Add block to available blocks...
                     empty++;
                 } else {                                // |-> Else
-                    let myNeighbors = neighbors.get(currentBlock);
+                    let myNeighbors = neighbors.get(myGid);
                     if (amIMoving(myPopulation, myNeighbors)) {
                         movingPopulations.push(myPopulation);
-                        emptyBlocks.push(currentBlock);
+                        emptyBlocks.push(myGid);
                         moving++;
                     } else {
-                        newState.set(currentBlock, myPopulation);
+                        newState.set(myGid, myPopulation);
                         stay++;
                     }
                 }
@@ -417,8 +407,8 @@ function schelling() {
 
             let columns = [time,gid,currentPop];
             let values = [];
-            for (let block of blocks)
-                values.push([currentIteration, block, currentState.get(block)]);
+            for (let [myGid, myPopulation] of currentState)
+                values.push([currentIteration, myGid, myPopulation]);
 
             let query = geoHelper.QueryBuilder.insertInto(out_table,columns,values);
             console.log(query.substring(0, 100));
