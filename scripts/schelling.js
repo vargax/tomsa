@@ -353,7 +353,7 @@ function schelling() {
 
         function processBlock() {
             console.log('|--> processBlock() '+lastState.size+' blocks');
-
+            console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
             for (let [myGid, myPopulation] of lastState) {
                 if (myPopulation == 0) {
                     emptyBlocks.push(myGid);
@@ -364,7 +364,7 @@ function schelling() {
                     nextState.set(myGid, myPopulation);
                 }
             }
-            console.log('     Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
+            console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
             processQueue();
 
             function amIMoving(myPopulation, myNeighbors) {
@@ -381,6 +381,7 @@ function schelling() {
         function movingPop2emptyBlocks() {
             registerSteps();
             console.log('|--> movingPop2emptyBlocks() :: '+movingPopulations.length+' :: '+emptyBlocks.length);
+            console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
 
             for (let population of movingPopulations) {
                 let randomBlock = Math.floor(Math.random() * emptyBlocks.length);
@@ -392,6 +393,7 @@ function schelling() {
                 nextState.set(emptyBlock,0);
             }
 
+            console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
             addTask(saveResults);
             processQueue();
         }
