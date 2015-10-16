@@ -346,27 +346,31 @@ function schelling() {
 
         schellingIterations.push(newState);
 
-        let thisIterBlocks = blocks.slice();
-        console.log('|--> processBlock()');
         registerSteps();
         processBlock();
 
         function processBlock() {
-            for (let currentBlock of thisIterBlocks) {
+            console.log('|--> processBlock()');
+            let empty=0, moving=0, stay=0;
+
+                for (let currentBlock of blocks) {
                 let myPopulation = currentState.get(currentBlock);
                 if (myPopulation == 0) {                // --> If this is an empty block...
                     emptyBlocks.push(currentBlock);     // |-> Add block to available blocks...
+                    empty++;
                 } else {                                // |-> Else
                     let myNeighbors = neighbors.get(currentBlock);
                     if (amIMoving(myPopulation, myNeighbors)) {
                         movingPopulations.push(myPopulation);
                         emptyBlocks.push(currentBlock);
+                        moving++;
                     } else {
                         newState.set(currentBlock, myPopulation);
+                        stay++;
                     }
                 }
-                //process.stdout.write('Progress: ' + (1 - (thisIterBlocks.length / numBlocks)).toFixed(3) + '\r');
             }
+            console.log('     Empty '+empty+' :: Moving '+moving+' :: Stay '+stay);
             processQueue();
 
             function amIMoving(myPopulation, myNeighbors) {
