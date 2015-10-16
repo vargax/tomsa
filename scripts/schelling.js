@@ -18,7 +18,7 @@ let gid = shape_table_columns[0];
 let geom = shape_table_columns[1];
 
 let out_table = 'schelling';
-let out_table_columns = ['t','currentpop'];
+let out_table_columns = ['t','currentpop'];     // --> column names ALLAYS in lowercase!
 let time = out_table_columns[0];
 let currentPop = out_table_columns[1];
 
@@ -362,7 +362,7 @@ function schelling() {
                         movingPopulations.push(myPopulation);
                         emptyBlocks.push(currentBlock);
                     } else {
-                        newState.set(currentBlock, currentPop);
+                        newState.set(currentBlock, myPopulation);
                     }
                 }
                 //process.stdout.write('Progress: ' + (1 - (thisIterBlocks.length / numBlocks)).toFixed(3) + '\r');
