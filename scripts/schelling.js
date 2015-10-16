@@ -408,8 +408,8 @@ function schelling() {
 
             let columns = [time,gid,currentPop];
             let values = [];
-            for (let [blockGid, blockCurrentPop] of currentState)
-                values.push([currentIteration, blockGid, blockCurrentPop]);
+            for (let block of blocks)
+                values.push([currentIteration, block, currentState.get(block)]);
 
             let query = geoHelper.QueryBuilder.insertInto(out_table,columns,values);
             console.log(query.substring(0, 100));
