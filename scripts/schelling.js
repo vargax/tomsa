@@ -357,7 +357,8 @@ function schelling() {
 
             console.log('before for');
             for (let [myGid, myPopulation] of lastState) {
-                empty++;
+                nextState.set(myGid,myPopulation);
+
                 //if (myPopulation == 0) {                // --> If this is an empty block...
                 //    emptyBlocks.push(myGid);            // |-> Add block to available blocks...
                 //    empty++;
