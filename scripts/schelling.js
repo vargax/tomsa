@@ -75,7 +75,7 @@ function registerSteps(numSteps = 1) {
  * @param nextTask :: Reference to the function to be executed.
  */
 function addTask(nextTask) {
-    console.log(': <-- AddTask'+nextTask);
+    console.log(': <-- AddTask');
     if (Array.isArray(nextTask)) {
         let task = nextTask.pop();
         while (task != undefined) {
@@ -351,8 +351,7 @@ function schelling() {
         addTask(movingPop2emptyBlocks);
 
         function processBlock() {
-            let currentBlock = thisIterBlocks.pop();
-            while (currentBlock != undefined) {
+            for (let currentBlock of thisIterBlocks) {
                 let myPopulation = currentState.get(currentBlock);
                 if (myPopulation == 0) {                // --> If this is an empty block...
                     emptyBlocks.push(currentBlock);     // |-> Add block to available blocks...
@@ -366,7 +365,6 @@ function schelling() {
                     }
                 }
                 process.stdout.write('Progress: ' + (1 - (thisIterBlocks.length / numBlocks)).toFixed(3) + '\r');
-                currentBlock = thisIterBlocks.pop();
             }
             processQueue();
         }
@@ -375,18 +373,13 @@ function schelling() {
             registerSteps();
             console.log('|--> movingPop2emptyBlocks()');
 
-            let population = movingPopulations.pop();
-            while (population != undefined) {
-
+            for (let population of movingPopulations) {
                 let randomBlock = Math.floor(Math.random() * emptyBlocks.length);
                 let myNewBlock = emptyBlocks.splice(randomBlock, 1);
                 newState.set(myNewBlock, population);
-
-                population = movingPopulations.pop();
             }
 
-            let emptyBlock = emptyBlocks.pop();
-            while (emptyBlock != undefined) {
+            for (let emptyBlock of emptyBlocks) {
                 newState.set(emptyBlock,0);
             }
 
