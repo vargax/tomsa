@@ -334,6 +334,13 @@ function schelling() {
 
     function simulate() {
         let lastState = schellingIterations[currentIteration];
+        let i=0;
+        for (let tuple of lastState) {
+            console.log(tuple);
+            i++;
+            if (i>100) break;
+        }
+
         currentIteration++;
 
         console.log('|-> simulate() :: '+currentIteration+' iteration ('+(iterations-currentIteration)+' remaining)');
@@ -352,6 +359,14 @@ function schelling() {
         function processBlock() {
             console.log('|--> processBlock() '+lastState.size+' blocks');
             let empty=0, moving=0, stay=0;
+
+            let i=0;
+            for (let tuple of lastState) {
+                console.log(tuple);
+                i++;
+                if (i>100) break;
+            }
+
 
             for (let [myGid, myPopulation] of lastState) {
                 if (myPopulation == 0) {                // --> If this is an empty block...
