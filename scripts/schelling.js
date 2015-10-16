@@ -337,18 +337,16 @@ function schelling() {
         let emptyBlocks = [];
         let movingPopulations = [];
 
-        let thisIterBlocks = blocks.slice();
-        console.log('|--> processBlock()');
-
-        registerSteps();
-        processBlock();
+        currentIteration <= iterations ? addTask(simulate) : addTask(saveResults);
+        addTask(movingPop2emptyBlocks);
 
         currentIteration++;
         schellingSim.set(currentIteration, newState);
 
-        currentIteration <= iterations ? addTask(simulate) : addTask(saveResults);
-
-        addTask(movingPop2emptyBlocks);
+        let thisIterBlocks = blocks.slice();
+        console.log('|--> processBlock()');
+        registerSteps();
+        processBlock();
 
         function processBlock() {
             for (let currentBlock of thisIterBlocks) {
