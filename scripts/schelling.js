@@ -338,7 +338,7 @@ function schelling() {
         let emptyBlocks = [];
         let movingPopulations = [];
 
-        currentIteration <= iterations ? addTask(simulate) : addTask(saveResults);
+        currentIteration < iterations ? addTask(simulate) : addTask(saveResults);
         addTask(movingPop2emptyBlocks);
 
         currentIteration++;
@@ -397,10 +397,11 @@ function schelling() {
     }
 
     function saveResults() {
+        registerSteps();
         console.log('|-> saveResults()');
         console.log('Schelling Sim size:'+schellingSim.size);
         for (let iter of schellingSim) {
-            console.log(iter);
+            console.log(iter[0]+' :: '+iter[1].size);
         }
 
         processQueue();
