@@ -357,7 +357,6 @@ function schelling() {
 
             console.log('before for');
             for (let [myGid, myPopulation] of lastState) {
-                console.log('in for');
                 if (myPopulation == 0) {                // --> If this is an empty block...
                     emptyBlocks.push(myGid);            // |-> Add block to available blocks...
                     empty++;
@@ -381,7 +380,6 @@ function schelling() {
                 let likeMe = 0;
                 console.log('++ before for');
                 for (let neighbor of myNeighbors) {
-                    console.log('++ in for');
                     let neighborPop = lastState.get(neighbor);
                     if (myPopulation == neighborPop) likeMe++;
                 }
