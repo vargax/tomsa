@@ -317,43 +317,43 @@ function schelling() {
             geo.query(query, loadInitialState);
         }
 
-        function loadInitialState(initialState) {
+        function loadInitialState(queryResult) {
             console.log('|--> loadInitialState()');
-            let currentState = new Map();
-            for (let block of initialState) {
+            let initialState = new Map();
+            for (let block of queryResult) {
                 let blockId = block[gid];
                 let blockPop = Number.parseInt(block[currentPop]);
-                currentState.set(blockId, blockPop);
+                initialState.set(blockId, blockPop);
             }
             schellingIterations = [];
-            schellingIterations.push(currentState);
+            schellingIterations.push(initialState);
 
             processQueue();
         }
     }
 
     function simulate() {
-        let currentState = schellingIterations[currentIteration];
+        let lastState = schellingIterations[currentIteration];
         currentIteration++;
 
         console.log('|-> simulate() :: '+currentIteration+' iteration ('+(iterations-currentIteration)+' remaining)');
-        let newState = new Map(); // --> The KEY is the block gid, the VALUE is the currentPop in that block.
+        let nextState = new Map(); // --> The KEY is the block gid, the VALUE is the currentPop in that block.
         let emptyBlocks = [];
         let movingPopulations = [];
 
         if (currentIteration <= iterations) addTask(simulate);
         addTask(movingPop2emptyBlocks);
 
-        schellingIterations.push(newState);
+        schellingIterations.push(nextState);
 
         registerSteps();
         processBlock();
 
         function processBlock() {
-            console.log('|--> processBlock()'+currentState.size);
+            console.log('|--> processBlock() '+lastState.size+' blocks');
             let empty=0, moving=0, stay=0;
 
-                for (let [myGid, myPopulation] of currentState) {
+            for (let [myGid, myPopulation] of lastState) {
                 if (myPopulation == 0) {                // --> If this is an empty block...
                     emptyBlocks.push(myGid);            // |-> Add block to available blocks...
                     empty++;
@@ -364,7 +364,7 @@ function schelling() {
                         emptyBlocks.push(myGid);
                         moving++;
                     } else {
-                        newState.set(myGid, myPopulation);
+                        nextState.set(myGid, myPopulation);
                         stay++;
                     }
                 }
@@ -375,7 +375,7 @@ function schelling() {
             function amIMoving(myPopulation, myNeighbors) {
                 let likeMe = 0;
                 for (let neighbor of myNeighbors) {
-                    let neighborPop = currentState.get(neighbor);
+                    let neighborPop = lastState.get(neighbor);
                     if (myPopulation == neighborPop) likeMe++;
                 }
 
@@ -384,17 +384,28 @@ function schelling() {
         }
 
         function movingPop2emptyBlocks() {
+
+            let i=0;
+            for (let tuple of nextState) {
+                console.dir(tuple);
+                console.log(movingPopulations[i]);
+                console.log(emptyBlocks[i]);
+                i++;
+                if (i>100) break;
+            }
+
+
             registerSteps();
             console.log('|--> movingPop2emptyBlocks()');
 
             for (let population of movingPopulations) {
                 let randomBlock = Math.floor(Math.random() * emptyBlocks.length);
                 let myNewBlock = emptyBlocks.splice(randomBlock, 1);
-                newState.set(myNewBlock, population);
+                nextState.set(myNewBlock, population);
             }
 
             for (let emptyBlock of emptyBlocks) {
-                newState.set(emptyBlock,0);
+                nextState.set(emptyBlock,0);
             }
 
             addTask(saveResults);
@@ -403,11 +414,11 @@ function schelling() {
 
         function saveResults() {
             registerSteps();
-            console.log('|---> saveResults() for '+currentIteration);
+            console.log('|---> saveResults() for '+currentIteration+' :: '+nextState.size+' blocks to save');
 
             let columns = [time,gid,currentPop];
             let values = [];
-            for (let [myGid, myPopulation] of newState)
+            for (let [myGid, myPopulation] of nextState)
                 values.push([currentIteration, myGid, myPopulation]);
 
             let query = geoHelper.QueryBuilder.insertInto(out_table,columns,values);
