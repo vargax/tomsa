@@ -18,7 +18,7 @@ let gid = shape_table_columns[0];
 let geom = shape_table_columns[1];
 
 let out_table = 'schelling';
-let out_table_columns = ['t','currentPop'];
+let out_table_columns = ['t','currentpop'];
 let time = out_table_columns[0];
 let currentPop = out_table_columns[1];
 
@@ -30,7 +30,7 @@ let neighbor_distance = 'lineal_distance';
 let currentTask = null;
 let remainingSteps = 0;
 let queue = [
-    //genInitialPopulation,
+    genInitialPopulation,
     schelling
 ];
 let timeStamp = Date.now();
@@ -324,8 +324,6 @@ function schelling() {
                 let blockId = block[gid];
                 let blockPop = Number.parseInt(block[currentPop]);
                 currentState.set(blockId, blockPop);
-                console.dir(block);
-                console.log(blockId+' :: '+blockPop);
             }
             schellingIterations = [];
             schellingIterations.push(currentState);
