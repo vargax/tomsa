@@ -52,7 +52,8 @@ function processQueue() {
         try {
             currentTask();
         } catch (e) {
-            console.log('\nDONE!');
+            console.log(remainingSteps+' remaining steps :: '+queue.length+' queue => DONE!');
+            console.dir(queue);
             console.dir(e);
         }
     } else {
@@ -122,7 +123,6 @@ function queryBlocks() {
 }
 
 let neighbors = null;
-let numNeighbors = 0;
 function queryNeighbors() {
     console.log(':-> queryNeighbors()');
     if (!blocks) {              // --> If the blocks had not been retrieved yet
@@ -243,7 +243,7 @@ function genInitialPopulation() {
     function clean() {
         console.log('|-> clean()');
         let query = 'DELETE FROM '+out_table+' WHERE '+time+'<> 0;';
-        //query += 'UPDATE '+out_table+' SET '+currentPop+'=-1;';
+        //query += 'UPDATE '+out_table+' SET '+currentPop+'=-1;'; // ToDO --> ENABLE POP GENERATION AGAIN!!
 
         registerSteps();
         geo.query(query, processQueue);
@@ -277,8 +277,7 @@ function genInitialPopulation() {
         query+='UPDATE '+out_table+' SET '+currentPop+'=0 WHERE '+currentPop+'= -1;';
 
         registerSteps();
-        //geo.query(query, processQueue);
-        processQueue();
+        geo.query(query, processQueue);
     }
 
     function done() {
@@ -321,11 +320,26 @@ function schelling() {
         function loadInitialState(queryResult) {
             console.log('|--> loadInitialState()');
             let initialState = new Map();
+            let withoutNeighbors = [];
+
             for (let block of queryResult) {
                 let blockId = block[gid];
-                let blockPop = Number.parseInt(block[currentPop]);
+                let blockPop = block[currentPop];
+
+                let blockNeighbors = neighbors.get(blockId);
+                if (blockNeighbors == undefined) {
+                    withoutNeighbors.push(blockId);
+                    continue;
+                }
+
                 initialState.set(blockId, blockPop);
             }
+
+            if (withoutNeighbors.length != 0) {
+                console.log('  WAR :: '+withoutNeighbors.length+' blocks without neighbors!');
+                console.dir(withoutNeighbors);
+            }
+
             schellingIterations = [];
             schellingIterations.push(initialState);
 
@@ -343,7 +357,7 @@ function schelling() {
         let emptyBlocks = [];
         let movingPopulations = [];
 
-        if (currentIteration <= iterations) addTask(simulate);
+        if (currentIteration < iterations) addTask(simulate);
         addTask(movingPop2emptyBlocks);
 
         schellingIterations.push(nextState);
@@ -355,17 +369,27 @@ function schelling() {
             console.log('|--> processBlock() '+lastState.size+' blocks');
             console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
 
-            for (let [myGid, myPopulation] of lastState) {
+            let withoutNeighbors = [];
+
+            for (let tuple of lastState) {
+                let myGid = tuple[0];
+                let myPopulation = tuple[1];
+
                 if (myPopulation == 0) {
                     emptyBlocks.push(myGid);
-                //} else if (amIMoving(myPopulation, neighbors.get(myGid))) {
-                } else if (Math.random() > 0.5) {
+                    continue;
+                }
+
+                let myNeighbors = neighbors.get(myGid);
+                if (amIMoving(myPopulation, myNeighbors)) {
                     movingPopulations.push(myPopulation);
                     emptyBlocks.push(myGid);
-                } else {
-                    nextState.set(myGid, myPopulation);
+                    continue;
                 }
+
+                nextState.set(myGid, myPopulation);
             }
+
             console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
             processQueue();
 
@@ -383,12 +407,12 @@ function schelling() {
         function movingPop2emptyBlocks() {
             registerSteps();
             console.log('|--> movingPop2emptyBlocks()');
-            console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
+            //console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
 
             let population = movingPopulations.pop();
             while (population != undefined) {
                 let randomBlock = Math.floor(Math.random() * emptyBlocks.length);
-                let myNewBlock = emptyBlocks.splice(randomBlock, 1);
+                let myNewBlock = (emptyBlocks.splice(randomBlock, 1))[0];
                 nextState.set(myNewBlock, population);
                 population = movingPopulations.pop();
             }
@@ -399,7 +423,7 @@ function schelling() {
                 emptyBlock = emptyBlocks.pop();
             }
 
-            console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
+            //console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
             //addTask(saveResults);
             processQueue();
         }
