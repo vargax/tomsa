@@ -296,7 +296,7 @@ function schelling() {
     let hash2inserts = new Map();
 
     registerSteps();
-    addTask([prepare, simulate]);
+    addTask([prepare, simulate, done]);
     processQueue();
 
     function prepare() {
@@ -369,8 +369,6 @@ function schelling() {
             console.log('|--> processBlock() '+lastState.size+' blocks');
             console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
 
-            let withoutNeighbors = [];
-
             for (let tuple of lastState) {
                 let myGid = tuple[0];
                 let myPopulation = tuple[1];
@@ -407,7 +405,6 @@ function schelling() {
         function movingPop2emptyBlocks() {
             registerSteps();
             console.log('|--> movingPop2emptyBlocks()');
-            //console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
 
             let population = movingPopulations.pop();
             while (population != undefined) {
@@ -423,7 +420,6 @@ function schelling() {
                 emptyBlock = emptyBlocks.pop();
             }
 
-            //console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
             addTask(saveResults);
             processQueue();
         }
@@ -431,14 +427,11 @@ function schelling() {
         function saveResults() {
             registerSteps();
             console.log('|--> saveResults()');
-            console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
 
             let columns = [time,gid,currentPop];
             let values = [];
             for (let [myGid, myPopulation] of nextState)
                 values.push([currentIteration, myGid, myPopulation]);
-
-            console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
 
             let query = geoHelper.QueryBuilder.insertInto(out_table,columns,values);
             hash2inserts.set(geo.query(query, queryCallback), currentIteration);
@@ -449,6 +442,13 @@ function schelling() {
                 console.log(':----> Insert for '+hash2inserts.get(hash)+' iteration DONE!');
             }
         }
+    }
+
+    function done() {
+        registerSteps();
+        console.log('|--> DONE Schelling simulation!');
+        scheduleVACUUM();
+        processQueue();
     }
 }
 
