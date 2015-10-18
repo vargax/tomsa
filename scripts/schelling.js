@@ -243,7 +243,7 @@ function genInitialPopulation() {
     function clean() {
         console.log('|-> clean()');
         let query = 'DELETE FROM '+out_table+' WHERE '+time+'<> 0;';
-        //query += 'UPDATE '+out_table+' SET '+currentPop+'=-1;'; // ToDO --> ENABLE POP GENERATION AGAIN!!
+        query += 'UPDATE '+out_table+' SET '+currentPop+'=-1;';
 
         registerSteps();
         geo.query(query, processQueue);
@@ -424,7 +424,7 @@ function schelling() {
             }
 
             //console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Ready '+nextState.size);
-            //addTask(saveResults);
+            addTask(saveResults);
             processQueue();
         }
 
