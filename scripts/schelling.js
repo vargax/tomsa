@@ -31,7 +31,8 @@ let currentTask = null;
 let remainingSteps = 0;
 let queue = [
     genInitialPopulation,
-    schelling
+    schelling,
+    driver
 ];
 let timeStamp = Date.now();
 
@@ -53,8 +54,10 @@ function processQueue() {
             currentTask();
         } catch (e) {
             console.log(remainingSteps+' remaining steps :: '+queue.length+' queue => DONE!');
-            console.dir(queue);
-            console.dir(e);
+            if (remainingSteps != 0 || queue.length != 0) {
+                console.dir(queue);
+                console.dir(e);
+            }
         }
     } else {
         remainingSteps--;
@@ -367,7 +370,6 @@ function schelling() {
 
         function processBlock() {
             console.log('|--> processBlock() '+lastState.size+' blocks');
-            console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
 
             for (let tuple of lastState) {
                 let myGid = tuple[0];
@@ -388,7 +390,7 @@ function schelling() {
                 nextState.set(myGid, myPopulation);
             }
 
-            console.log('  <= Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
+            console.log('  => Empty '+emptyBlocks.length+' :: Moving '+movingPopulations.length+' :: Stay '+nextState.size);
             processQueue();
 
             function amIMoving(myPopulation, myNeighbors) {
@@ -425,7 +427,6 @@ function schelling() {
         }
 
         function saveResults() {
-            registerSteps();
             console.log('|--> saveResults()');
 
             let columns = [time,gid,currentPop];
@@ -434,12 +435,13 @@ function schelling() {
                 values.push([currentIteration, myGid, myPopulation]);
 
             let query = geoHelper.QueryBuilder.insertInto(out_table,columns,values);
+
+            registerSteps();
             hash2inserts.set(geo.query(query, queryCallback), currentIteration);
 
-            processQueue();
-
             function queryCallback(noResult, hash) {
-                console.log(':----> Insert for '+hash2inserts.get(hash)+' iteration DONE!');
+                console.log('|---> Insert for iteration '+hash2inserts.get(hash)+' DONE!');
+                processQueue();
             }
         }
     }
@@ -447,6 +449,24 @@ function schelling() {
     function done() {
         registerSteps();
         console.log('|--> DONE Schelling simulation!');
+        scheduleVACUUM();
+        processQueue();
+    }
+}
+
+function driver() {
+    console.log('|-> driver()');
+
+    let query = '';
+    query+= 'UPDATE '+out_table+' SET '+geom+' = subquery.'+geom;
+    query+= ' FROM (SELECT '+gid+','+geom+' FROM '+shape_table+') as subquery';
+    query+= ' WHERE '+out_table+'.'+gid+'= subquery.'+gid+';';
+
+    registerSteps();
+    geo.query(query, queryCallback);
+
+    function queryCallback(result, hash) {
+        console.log('|--> Geometry update DONE in '+out_table);
         scheduleVACUUM();
         processQueue();
     }
