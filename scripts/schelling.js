@@ -3,7 +3,7 @@ import GeotabulaDB from 'geotabuladb'
 import * as geoHelper from 'geotabuladb'
 
 // CONSTANTS -----------------------------------------------------------------------------------------------------------
-const _NEIGHBORS_TABLE_SUFFIX = '_neighbor';
+const _NEIGHBORS_TABLE_SUFFIX = '_neighbors';
 const DATABASE_WORKERS = 10;
 
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
@@ -495,9 +495,9 @@ geo.setCredentials({
 let rl = require('readline-sync');
 let input;
 
-console.log('\n|-----------------------------------------------------');
-console.log("| TOMSA :: iter1 :: Basic radius-based Schelling Model");
-console.log('|-----------------------------------------------------\n');
+console.log('\n|-----------------------------------------------------------');
+console.log("| TOMSA :: iter1 :: Euclidean distance-based Schelling Model");
+console.log('|-----------------------------------------------------------\n');
 
 input = rl.question("Output table name ('"+out_table+"'): ");
 if (input.length != 0) {
