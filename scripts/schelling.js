@@ -117,10 +117,12 @@ function queryBlocks() {
 
     function loadBlocks(allBlocks) {
         console.log(':--> loadBlocks()');
-        for (let block of allBlocks) {
-            blocks.push(block[gid]);
-        }
+
+        for (let block of allBlocks) blocks.push(block[gid]);
+
         numBlocks = blocks.length;
+
+        console.log('  => '+numBlocks+' blocks loaded!');
         processQueue();
     }
 }
@@ -155,6 +157,7 @@ function queryNeighbors() {
                 neighbors.set(myGid,[neighborGid]);
             }
         }
+        console.log('  => '+neighbors.size+' neighbors loaded!');
         processQueue();
     }
 }
@@ -220,9 +223,9 @@ function calculateNeighbors() {
 
         query = 'INSERT INTO '+neighbors_table;
         query+= ' SELECT '+shape_table+'.'+gid+',neighbor.'+gid;
-        query+= ' ,ST_Distance(neighbor.'+geom+','+shape_table+'.'+geom+')';
+        query+= ' ,ST_Distance(neighbor.'+geom+'::geography,'+shape_table+'.'+geom+'::geography)';
         query+= ' FROM '+shape_table+','+shape_table+' neighbor';
-        query+= ' WHERE ST_DWithin(neighbor.'+geom+','+shape_table+'.'+geom+','+radius+')';
+        query+= ' WHERE ST_DWithin(neighbor.'+geom+'::geography,'+shape_table+'.'+geom+'::geography,'+radius+')';
         //query+= ' LIMIT 10';
 
         registerSteps();
