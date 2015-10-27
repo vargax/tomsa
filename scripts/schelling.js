@@ -4,7 +4,7 @@ import * as geoHelper from 'geotabuladb'
 
 // CONSTANTS -----------------------------------------------------------------------------------------------------------
 const _NEIGHBORS_TABLE_SUFFIX = '_neighbors';
-const DATABASE_WORKERS = 10;
+const DATABASE_WORKERS = 8;
 
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
 let radius = 1000;
@@ -165,8 +165,12 @@ function queryNeighbors() {
 // MAIN FUNCTIONS ------------------------------------------------------------------------------------------------------
 function calculateNeighbors() {
     console.log('\ncalculateNeighbors()');
+
+    let queries = [];
+    let totalBlocks;
+
     registerSteps();
-    addTask([clean, createTables, runQuery, done]);
+    addTask([clean, createTables, genQueries, runQueries, done]);
     processQueue();
 
     function clean() {
@@ -216,20 +220,56 @@ function calculateNeighbors() {
         scheduleVACUUM();
     }
 
-    function runQuery() {
-        console.log('|-> runQuery()');
-
-        let query;
-
-        query = 'INSERT INTO '+neighbors_table;
-        query+= ' SELECT '+shape_table+'.'+gid+',neighbor.'+gid;
-        query+= ' ,ST_Distance(neighbor.'+geom+'::geography,'+shape_table+'.'+geom+'::geography)';
-        query+= ' FROM '+shape_table+','+shape_table+' neighbor';
-        query+= ' WHERE ST_DWithin(neighbor.'+geom+'::geography,'+shape_table+'.'+geom+'::geography,'+radius+')';
-        //query+= ' LIMIT 10';
+    function genQueries() {
+        console.log('|-> genQueries()');
+        let queryParams = {
+            tableName: shape_table,
+            properties: [gid]
+            //where: 'pob > 0'
+            //limit: 100
+        };
 
         registerSteps();
-        geo.query(query, processQueue);
+        geo.query(queryParams, buildQueries);
+
+        function buildQueries(allBlocks) {
+            console.log('|--> buildQueries()');
+            totalBlocks = allBlocks.length;
+            console.log('|---> Looking for blocks at ' + radius + ' meters of a total of ' + totalBlocks + ' blocks...');
+
+            for (let block of allBlocks) {
+                let blockGid = block[gid];
+                let query;
+
+                query = 'INSERT INTO '+neighbors_table;
+                query+= ' SELECT '+shape_table+'.'+gid+',neighbor.'+gid;
+                query+= ' ,ST_Distance(neighbor.'+geom+'::geography,'+shape_table+'.'+geom+'::geography)';
+                query+= ' FROM '+shape_table+','+shape_table+' neighbor';
+                query+= ' WHERE '+shape_table+'.'+gid+'='+blockGid
+                    +' AND ST_DWithin(neighbor.'+geom+'::geography,'+shape_table+'.'+geom+'::geography,'+radius+')';
+                //query+= ' LIMIT 10';
+
+                queries.push(query);
+            }
+            processQueue();
+        }
+    }
+
+    function runQueries() {
+        for (let worker = 0; worker < DATABASE_WORKERS; worker++) {
+            registerSteps();
+            recursiveWorker();
+        }
+
+        function recursiveWorker() {
+            let nextQuery = queries.shift();
+            if (nextQuery != undefined) { // --> Recursion termination condition
+                registerSteps();
+                geo.query(nextQuery, recursiveWorker);
+                process.stdout.write('Progress: '+(1-(queries.length/totalBlocks)).toFixed(4)+'\r');
+            }
+            processQueue();
+        }
     }
 
     function done() {
