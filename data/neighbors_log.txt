@@ -1,0 +1,40 @@
+|-----------------------------------------------------------
+| TOMSA :: iter1 :: Euclidean distance-based Schelling Model
+|-----------------------------------------------------------
+
+Output table name ('schelling'):
+|-> Output table name set to 'schelling'
+Calculate neighbors -> would take some time! (no): yes/no yes
+|-> Radius (1000 meters):
+|--> Radius set to 1000 meters
+: <-- AddTask
+Populations (3 different populations): 4
+|-> Populations set to 4 different populations
+Tolerance (0.3 tolerance factor):
+|-> Tolerance factor set to 0.3
+Iterations (10 schelling iterations): 30
+|-> Iterations set to 30
+
+Press ENTER to start or Ctrl+c to cancel...
+: <-- Last task execution time: 13.318 seconds
+
+calculateNeighbors()
+: <-- AddTask
+: <-- Last task execution time: 0.001 seconds
+|-> clean()
+: <-- Last task execution time: 0.199 seconds
+|-> createTables()
+: <-- AddTask
+: <-- Last task execution time: 2.888 seconds
+|-> VACUUM
+: <-- Last task execution time: 0.924 seconds
+|-> genQueries()
+|--> buildQueries()
+|---> Looking for blocks at 1000 meters of a total of 43225 blocks...
+: <-- Last task execution time: 0.453 seconds
+: <-- Last task execution time: 18361.236 seconds
+|--> DONE neighbors calculation!
+: <-- AddTask
+: <-- Last task execution time: 0.001 seconds
+|-> VACUUM
+: <-- Last task execution time: 2.693 seconds

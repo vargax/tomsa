@@ -1,10 +1,11 @@
 // IMPORTS -------------------------------------------------------------------------------------------------------------
 import GeotabulaDB from 'geotabuladb'
 import * as geoHelper from 'geotabuladb'
+import os from 'os';
 
 // CONSTANTS -----------------------------------------------------------------------------------------------------------
 const _NEIGHBORS_TABLE_SUFFIX = '_neighbors';
-const DATABASE_WORKERS = 8;
+const DATABASE_WORKERS = os.cpus().length;
 
 // CONFIG VARIABLES ----------------------------------------------------------------------------------------------------
 let radius = 1000;
@@ -31,8 +32,7 @@ let currentTask = null;
 let remainingSteps = 0;
 let queue = [
     genInitialPopulation,
-    schelling,
-    driver
+    schelling
 ];
 let timeStamp = Date.now();
 
@@ -53,7 +53,7 @@ function processQueue() {
         try {
             currentTask();
         } catch (e) {
-            console.log(remainingSteps+' remaining steps :: '+queue.length+' queue => DONE!');
+            console.log(remainingSteps+' remaining steps :: '+queue.length+' task in the queue => DONE!');
             if (remainingSteps != 0 || queue.length != 0) {
                 console.dir(queue);
                 console.dir(e);
@@ -157,7 +157,7 @@ function queryNeighbors() {
                 neighbors.set(myGid,[neighborGid]);
             }
         }
-        console.log('  => '+neighbors.size+' neighbors loaded!');
+        console.log('  => neighbors loaded for '+neighbors.size+' blocks!');
         processQueue();
     }
 }
@@ -188,7 +188,7 @@ function calculateNeighbors() {
         // Main table for schelling model...
         let queryParams = {
             tableName: shape_table,
-            properties: [gid, geom]
+            properties: [gid]
         };
         let query = geoHelper.QueryBuilder.copyTable(out_table, queryParams);
 
@@ -256,6 +256,7 @@ function calculateNeighbors() {
     }
 
     function runQueries() {
+        console.log('|--> runQueries()');
         for (let worker = 0; worker < DATABASE_WORKERS; worker++) {
             registerSteps();
             recursiveWorker();
@@ -282,8 +283,12 @@ function calculateNeighbors() {
 
 function genInitialPopulation() {
     console.log('\ngenInitialPopulation()');
+
+    let queries = [];
+    let totalQueries;
+
     registerSteps();
-    addTask([clean, setPopulations, done]);
+    addTask([clean, genQueries, runQueries, done]);
     processQueue();
 
     function clean() {
@@ -295,35 +300,47 @@ function genInitialPopulation() {
         geo.query(query, processQueue);
     }
 
-    function setPopulations() {
-        console.log('|-> setPopulations()');
+    function genQueries() {
+        console.log('|-> genQueries()');
 
-        if (!blocks) {                  // --> If the blocks had not been retrieved yet
-            addTask(setPopulations);    // |-> Call me again when you
-            queryBlocks();              // |-> retrieve blocks..
+        if (!blocks) {           // --> If the blocks had not been retrieved yet
+            addTask(genQueries); // |-> call me again when done the
+            queryBlocks();       // |-> blocks retrieval
             return
         }
 
-        let query='';
-        let population = populations;
-        let limit = Math.round(numBlocks/(populations+1));
-        let remaining = numBlocks;
-        while (population != 0) {
-            query+= 'UPDATE '+out_table+' SET '+currentPop+'='+population;
-            query+= ' FROM ('
-                +' SELECT '+gid+' FROM '+out_table
-                +' WHERE '+currentPop+'=-1 AND '+gid+'>=random()*'+remaining
-                +' LIMIT '+limit
-                +')AS target';
-            query+= ' WHERE '+out_table+'.'+gid+'=target.'+gid+';';
-
-            remaining -= limit;
-            population--;
-        }
-        query+='UPDATE '+out_table+' SET '+currentPop+'=0 WHERE '+currentPop+'= -1;';
-
         registerSteps();
-        geo.query(query, processQueue);
+        for (let block of blocks) {
+            let query = '';
+            query+= 'UPDATE '+out_table+' SET '+currentPop+'='+getRandomPopulation();
+            query+= ' WHERE '+gid+'='+block;
+
+            queries.push(query);
+        }
+        totalQueries = queries.length;
+        processQueue();
+
+        function getRandomPopulation() {
+            return Math.floor(Math.random() * (populations + 1));
+        }
+    }
+
+    function runQueries() {
+        console.log('|-> runQueries()');
+        for (let worker = 0; worker < DATABASE_WORKERS; worker++) {
+            registerSteps();
+            recursiveWorker();
+        }
+
+        function recursiveWorker() {
+            let nextQuery = queries.shift();
+            if (nextQuery != undefined) { // --> Recursion termination condition
+                registerSteps();
+                geo.query(nextQuery, recursiveWorker);
+                process.stdout.write('Progress: '+(1-(queries.length/totalQueries)).toFixed(4)+'\r');
+            }
+            processQueue();
+        }
     }
 
     function done() {
@@ -398,7 +415,7 @@ function schelling() {
 
         currentIteration++;
 
-        console.log('|-> simulate() :: '+currentIteration+' iteration ('+(iterations-currentIteration)+' remaining)');
+        console.log('|-> simulate() :: Iteration '+currentIteration+' ('+(iterations-currentIteration)+' remaining)');
         let nextState = new Map(); // --> The KEY is the block gid, the VALUE is the currentPop in that block.
         let emptyBlocks = [];
         let movingPopulations = [];
@@ -492,24 +509,6 @@ function schelling() {
     function done() {
         registerSteps();
         console.log('|--> DONE Schelling simulation!');
-        scheduleVACUUM();
-        processQueue();
-    }
-}
-
-function driver() {
-    console.log('|-> driver()');
-
-    let query = '';
-    query+= 'UPDATE '+out_table+' SET '+geom+' = subquery.'+geom;
-    query+= ' FROM (SELECT '+gid+','+geom+' FROM '+shape_table+') as subquery';
-    query+= ' WHERE '+out_table+'.'+gid+'= subquery.'+gid+';';
-
-    registerSteps();
-    geo.query(query, queryCallback);
-
-    function queryCallback(result, hash) {
-        console.log('|--> Geometry update DONE in '+out_table);
         scheduleVACUUM();
         processQueue();
     }
